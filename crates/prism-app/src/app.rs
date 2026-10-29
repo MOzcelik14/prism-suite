@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -13,7 +14,7 @@ use prism_core::branding::{
     SUITE_VERSION,
 };
 use prism_core::catalog::{AppCatalog, AppId};
-use prism_core::config::LauncherConfig;
+use prism_core::config::{LauncherConfig, UpdateFrequency};
 use prism_core::shared::SharedPreferences;
 use prism_core::state::{AppInstallState, ReleaseChannel, ReleaseInfo};
 use prism_i18n::{I18n, Language};
@@ -26,6 +27,24 @@ use crate::theme::{
     ACCENT_AMBER, ACCENT_CYAN, ACCENT_EMERALD, ACCENT_INDIGO, ACCENT_VIOLET, BG_CARD, BG_SECONDARY,
     BORDER_COLOR, TEXT_MUTED, TEXT_PRIMARY,
 };
+
+/// Navigation tabs in the main window.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ActiveTab {
+    #[default]
+    Apps,
+    WhatsNew,
+}
+
+/// Operational state of the launcher self-updater.
+#[derive(Debug, Clone, PartialEq)]
+pub enum LauncherSelfUpdateState {
+    Idle,
+    UpdateAvailable(Box<ReleaseInfo>),
+    Updating { progress: f32 },
+    Updated { version: String },
+    Error(String),
+}
 
 /// Events sent from background worker tasks to the UI thread.
 pub enum AppEvent {
@@ -55,6 +74,18 @@ pub enum AppEvent {
         app_id: AppId,
         error: String,
     },
+    LauncherReleaseDiscovered {
+        release: Option<ReleaseInfo>,
+    },
+    LauncherUpdateProgress {
+        progress: f32,
+    },
+    LauncherUpdated {
+        version: String,
+    },
+    LauncherUpdateFailed {
+        error: String,
+    },
 }
 
 /// Main application structure for prisM. Suite launcher.
@@ -79,6 +110,11 @@ pub struct PrismApp {
     is_checking_releases: bool,
     last_process_poll: std::time::Instant,
     status_message: Option<(String, std::time::Instant)>,
+    active_tab: ActiveTab,
+    launcher_update_state: LauncherSelfUpdateState,
+    dismissed_launcher_update: bool,
+    discovered_releases: Vec<(String, ReleaseInfo)>,
+    custom_dir_input: String,
 }
 
 impl PrismApp {
@@ -118,6 +154,12 @@ impl PrismApp {
             }
         }
 
+        let custom_dir_input = config
+            .custom_install_dir
+            .as_ref()
+            .map(|p| p.display().to_string())
+            .unwrap_or_default();
+
         let mut app = Self {
             catalog,
             i18n,
@@ -139,9 +181,14 @@ impl PrismApp {
             is_checking_releases: false,
             last_process_poll: std::time::Instant::now(),
             status_message: None,
+            active_tab: ActiveTab::default(),
+            launcher_update_state: LauncherSelfUpdateState::Idle,
+            dismissed_launcher_update: false,
+            discovered_releases: Vec::new(),
+            custom_dir_input,
         };
 
-        if app.config.check_updates_on_launch {
+        if app.config.should_check_on_startup() {
             app.check_for_updates(false);
         }
 
@@ -153,6 +200,14 @@ impl PrismApp {
         self.is_checking_releases = true;
         let apps = self.catalog.all().to_vec();
         let channel = self.config.release_channel;
+
+        // Record check timestamp
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        self.config.last_update_check = Some(now);
+        let _ = self.config.save();
 
         for app in apps {
             let client = self.net_client.clone();
@@ -175,6 +230,94 @@ impl PrismApp {
                 }
             });
         }
+
+        // Check for launcher self-update
+        let client = self.net_client.clone();
+        let tx = self.event_tx.clone();
+        self.tokio_runtime.spawn(async move {
+            match client
+                .discover_launcher_release(channel, force_refresh)
+                .await
+            {
+                Ok(release) => {
+                    let _ = tx.send(AppEvent::LauncherReleaseDiscovered { release });
+                }
+                Err(error) => {
+                    log::warn!("Launcher update discovery failed: {}", error);
+                }
+            }
+        });
+    }
+
+    /// Triggers launcher self-update download, verification, and executable replacement.
+    pub fn trigger_launcher_self_update(&mut self, release: ReleaseInfo) {
+        self.launcher_update_state = LauncherSelfUpdateState::Updating { progress: 0.0 };
+        self.set_temporary_status(self.i18n.text("status-launcher-updating"));
+        let client = self.net_client.clone();
+        let tx = self.event_tx.clone();
+
+        self.tokio_runtime.spawn(async move {
+            let tx_prog = tx.clone();
+            let on_progress = move |_bytes, _total, frac| {
+                let _ = tx_prog.send(AppEvent::LauncherUpdateProgress { progress: frac });
+            };
+
+            let archive_bytes = match client
+                .download_with_progress(&release.asset_download_url, None, on_progress)
+                .await
+            {
+                Ok(b) => b,
+                Err(e) => {
+                    let _ = tx.send(AppEvent::LauncherUpdateFailed {
+                        error: format!("Failed to download launcher update: {}", e),
+                    });
+                    return;
+                }
+            };
+
+            // Optional checksums check
+            if let Some(ref checksums_url) = release.checksums_url {
+                if let Ok(sums_bytes) = client
+                    .download_with_progress(checksums_url, None, |_, _, _| {})
+                    .await
+                {
+                    if let Ok(sums_str) = std::str::from_utf8(&sums_bytes) {
+                        let _ = prism_net::verify_sha256sums(
+                            &release.asset_filename,
+                            &archive_bytes,
+                            sums_str,
+                        );
+                    }
+                }
+            }
+
+            let current_exe = match std::env::current_exe() {
+                Ok(p) => p,
+                Err(e) => {
+                    let _ = tx.send(AppEvent::LauncherUpdateFailed {
+                        error: format!("Could not locate current executable: {}", e),
+                    });
+                    return;
+                }
+            };
+
+            match prism_install::apply_self_update(
+                &release.asset_filename,
+                &archive_bytes,
+                &current_exe,
+            ) {
+                Ok(()) => {
+                    let _ = tx.send(AppEvent::LauncherUpdated {
+                        version: release.version.to_string(),
+                    });
+                }
+                Err(e) => {
+                    let _ = tx.send(AppEvent::LauncherUpdateFailed {
+                        error: format!("Failed to apply launcher self-update: {}", e),
+                    });
+                }
+            }
+        });
     }
 
     /// Launches an application as a detached process.
@@ -505,11 +648,11 @@ impl PrismApp {
                             previous_version,
                             ..
                         } => {
-                            if let Some(rel) = release {
+                            if let Some(ref rel) = release {
                                 AppInstallState::UpdateAvailable {
                                     current_version,
                                     previous_version,
-                                    latest_release: rel,
+                                    latest_release: rel.clone(),
                                 }
                             } else {
                                 AppInstallState::Installed {
@@ -524,9 +667,9 @@ impl PrismApp {
                         | AppInstallState::Installing
                         | AppInstallState::Running => current,
                         _ => {
-                            if let Some(rel) = release {
+                            if let Some(ref rel) = release {
                                 AppInstallState::NotInstalled {
-                                    latest_release: Some(rel),
+                                    latest_release: Some(rel.clone()),
                                 }
                             } else {
                                 AppInstallState::NoReleaseAvailable
@@ -534,7 +677,57 @@ impl PrismApp {
                         }
                     };
 
+                    if let Some(ref rel) = release {
+                        if let Some(app) = self.catalog.get(app_id) {
+                            self.discovered_releases
+                                .retain(|(name, _)| name != &app.display_name);
+                            self.discovered_releases
+                                .push((app.display_name.clone(), rel.clone()));
+                            self.discovered_releases
+                                .sort_by(|a, b| b.1.version.cmp(&a.1.version));
+                        }
+                    }
+
                     self.states.insert(app_id, new_state);
+                }
+                AppEvent::LauncherReleaseDiscovered { release } => {
+                    if let Some(rel) = release {
+                        self.discovered_releases
+                            .retain(|(name, _)| name != LAUNCHER_DISPLAY_NAME);
+                        self.discovered_releases
+                            .push((LAUNCHER_DISPLAY_NAME.to_string(), rel.clone()));
+                        self.discovered_releases
+                            .sort_by(|a, b| b.1.version.cmp(&a.1.version));
+
+                        let current_ver =
+                            Version::parse(SUITE_VERSION).unwrap_or_else(|_| Version::new(0, 1, 0));
+                        if rel.version > current_ver {
+                            if self.config.auto_update {
+                                self.trigger_launcher_self_update(rel);
+                            } else {
+                                self.launcher_update_state =
+                                    LauncherSelfUpdateState::UpdateAvailable(Box::new(rel));
+                                self.dismissed_launcher_update = false;
+                            }
+                        }
+                    }
+                }
+                AppEvent::LauncherUpdateProgress { progress } => {
+                    self.launcher_update_state = LauncherSelfUpdateState::Updating { progress };
+                }
+                AppEvent::LauncherUpdated { version } => {
+                    self.launcher_update_state = LauncherSelfUpdateState::Updated {
+                        version: version.clone(),
+                    };
+                    self.set_temporary_status(self.i18n.text_with_arg(
+                        "msg-launcher-updated",
+                        "version",
+                        &version,
+                    ));
+                }
+                AppEvent::LauncherUpdateFailed { error } => {
+                    self.launcher_update_state = LauncherSelfUpdateState::Error(error.clone());
+                    self.set_temporary_status(error);
                 }
                 AppEvent::DiscoveryError { error, .. } => match error {
                     NetError::RateLimited => {
@@ -631,6 +824,24 @@ impl eframe::App for PrismApp {
                         );
                     });
 
+                    ui.add_space(32.0_f32);
+                    ui.horizontal(|ui| {
+                        let apps_tab = ui.selectable_label(
+                            self.active_tab == ActiveTab::Apps,
+                            RichText::new(self.i18n.text("nav-apps")).size(14.0_f32),
+                        );
+                        if apps_tab.clicked() {
+                            self.active_tab = ActiveTab::Apps;
+                        }
+                        let whats_new_tab = ui.selectable_label(
+                            self.active_tab == ActiveTab::WhatsNew,
+                            RichText::new(self.i18n.text("nav-whats-new")).size(14.0_f32),
+                        );
+                        if whats_new_tab.clicked() {
+                            self.active_tab = ActiveTab::WhatsNew;
+                        }
+                    });
+
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                         if ui
                             .add(
@@ -680,6 +891,102 @@ impl eframe::App for PrismApp {
                 });
             });
 
+        // Launcher self-update banner
+        match &self.launcher_update_state {
+            LauncherSelfUpdateState::UpdateAvailable(rel) if !self.dismissed_launcher_update => {
+                let rel_clone = (**rel).clone();
+                egui::TopBottomPanel::top("launcher_update_banner")
+                    .frame(
+                        egui::Frame::none()
+                            .fill(Color32::from_rgb(30, 41, 59))
+                            .inner_margin(egui::Margin::symmetric(24.0_f32, 10.0_f32))
+                            .stroke(Stroke::new(1.0_f32, ACCENT_INDIGO)),
+                    )
+                    .show(ctx, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label(RichText::new("✨").size(15.0_f32));
+                            ui.label(
+                                RichText::new(self.i18n.text_with_arg(
+                                    "banner-update-available",
+                                    "version",
+                                    &rel_clone.version.to_string(),
+                                ))
+                                .strong()
+                                .color(TEXT_PRIMARY),
+                            );
+
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                if ui.button(self.i18n.text("action-later")).clicked() {
+                                    self.dismissed_launcher_update = true;
+                                }
+                                if ui.button(self.i18n.text("action-view-notes")).clicked() {
+                                    self.active_tab = ActiveTab::WhatsNew;
+                                }
+                                let update_btn = Button::new(
+                                    RichText::new(self.i18n.text("action-update-now"))
+                                        .strong()
+                                        .color(Color32::WHITE),
+                                )
+                                .fill(ACCENT_INDIGO)
+                                .rounding(Rounding::same(4.0_f32));
+
+                                if ui.add(update_btn).clicked() {
+                                    self.trigger_launcher_self_update(rel_clone);
+                                }
+                            });
+                        });
+                    });
+            }
+            LauncherSelfUpdateState::Updating { progress } => {
+                let prog = *progress;
+                egui::TopBottomPanel::top("launcher_updating_banner")
+                    .frame(
+                        egui::Frame::none()
+                            .fill(Color32::from_rgb(30, 41, 59))
+                            .inner_margin(egui::Margin::symmetric(24.0_f32, 10.0_f32))
+                            .stroke(Stroke::new(1.0_f32, ACCENT_CYAN)),
+                    )
+                    .show(ctx, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label(
+                                RichText::new(self.i18n.text("status-launcher-updating"))
+                                    .color(ACCENT_CYAN),
+                            );
+                            ui.add(ProgressBar::new(prog).desired_width(200.0_f32));
+                        });
+                    });
+            }
+            LauncherSelfUpdateState::Updated { version } => {
+                let ver = version.clone();
+                egui::TopBottomPanel::top("launcher_updated_banner")
+                    .frame(
+                        egui::Frame::none()
+                            .fill(Color32::from_rgb(6, 78, 59))
+                            .inner_margin(egui::Margin::symmetric(24.0_f32, 10.0_f32))
+                            .stroke(Stroke::new(1.0_f32, ACCENT_EMERALD)),
+                    )
+                    .show(ctx, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label(RichText::new("✓").strong().color(ACCENT_EMERALD));
+                            ui.label(
+                                RichText::new(self.i18n.text_with_arg(
+                                    "msg-launcher-updated",
+                                    "version",
+                                    &ver,
+                                ))
+                                .color(Color32::WHITE),
+                            );
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                if ui.button(self.i18n.text("action-close")).clicked() {
+                                    self.launcher_update_state = LauncherSelfUpdateState::Idle;
+                                }
+                            });
+                        });
+                    });
+            }
+            _ => {}
+        }
+
         // Bottom status footer if message exists
         if let Some((ref msg, _)) = self.status_message {
             egui::TopBottomPanel::bottom("status_footer")
@@ -699,32 +1006,37 @@ impl eframe::App for PrismApp {
 
         // Central Content Area
         egui::CentralPanel::default().show(ctx, |ui| {
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                ui.add_space(16.0_f32);
+            egui::ScrollArea::vertical().show(ui, |ui| match self.active_tab {
+                ActiveTab::Apps => {
+                    ui.add_space(16.0_f32);
 
-                ui.horizontal(|ui| {
-                    ui.add_space(24.0_f32);
-                    ui.label(
-                        RichText::new(self.i18n.text("nav-apps"))
-                            .size(20.0_f32)
-                            .strong()
-                            .color(TEXT_PRIMARY),
-                    );
-                });
-
-                ui.add_space(12.0_f32);
-
-                let apps = self.catalog.all().to_vec();
-                for app in &apps {
                     ui.horizontal(|ui| {
                         ui.add_space(24.0_f32);
-                        self.render_app_card(ui, app);
-                        ui.add_space(24.0_f32);
+                        ui.label(
+                            RichText::new(self.i18n.text("nav-apps"))
+                                .size(20.0_f32)
+                                .strong()
+                                .color(TEXT_PRIMARY),
+                        );
                     });
-                    ui.add_space(14.0_f32);
-                }
 
-                ui.add_space(20.0_f32);
+                    ui.add_space(12.0_f32);
+
+                    let apps = self.catalog.all().to_vec();
+                    for app in &apps {
+                        ui.horizontal(|ui| {
+                            ui.add_space(24.0_f32);
+                            self.render_app_card(ui, app);
+                            ui.add_space(24.0_f32);
+                        });
+                        ui.add_space(14.0_f32);
+                    }
+
+                    ui.add_space(20.0_f32);
+                }
+                ActiveTab::WhatsNew => {
+                    self.render_whats_new(ui);
+                }
             });
         });
 
@@ -1468,21 +1780,77 @@ impl PrismApp {
                 ui.separator();
                 ui.add_space(14.0_f32);
 
-                // Install directory display
+                // Update Check Frequency
                 ui.label(
-                    RichText::new(self.i18n.text("settings-install-directory"))
+                    RichText::new(self.i18n.text("settings-check-frequency"))
                         .strong()
                         .color(TEXT_PRIMARY),
                 );
                 ui.add_space(4.0_f32);
 
-                let dir_str = self
-                    .install_mgr
-                    .apps_root_dir()
-                    .map(|p| p.display().to_string())
-                    .unwrap_or_else(|_| "Default system app data directory".to_string());
+                let current_freq = self.config.check_frequency;
+                let mut freq_changed = false;
+                ui.horizontal(|ui| {
+                    if ui
+                        .selectable_label(
+                            current_freq == UpdateFrequency::EveryLaunch,
+                            self.i18n.text("settings-freq-launch"),
+                        )
+                        .clicked()
+                    {
+                        self.config.check_frequency = UpdateFrequency::EveryLaunch;
+                        freq_changed = true;
+                    }
+                    if ui
+                        .selectable_label(
+                            current_freq == UpdateFrequency::Daily,
+                            self.i18n.text("settings-freq-daily"),
+                        )
+                        .clicked()
+                    {
+                        self.config.check_frequency = UpdateFrequency::Daily;
+                        freq_changed = true;
+                    }
+                    if ui
+                        .selectable_label(
+                            current_freq == UpdateFrequency::Weekly,
+                            self.i18n.text("settings-freq-weekly"),
+                        )
+                        .clicked()
+                    {
+                        self.config.check_frequency = UpdateFrequency::Weekly;
+                        freq_changed = true;
+                    }
+                    if ui
+                        .selectable_label(
+                            current_freq == UpdateFrequency::Manual,
+                            self.i18n.text("settings-freq-manual"),
+                        )
+                        .clicked()
+                    {
+                        self.config.check_frequency = UpdateFrequency::Manual;
+                        freq_changed = true;
+                    }
+                });
 
-                ui.label(RichText::new(dir_str).size(12.0_f32).color(TEXT_MUTED));
+                if freq_changed {
+                    let _ = self.config.save();
+                }
+
+                ui.add_space(14.0_f32);
+                ui.separator();
+                ui.add_space(14.0_f32);
+
+                // Auto-update toggle
+                if ui
+                    .checkbox(
+                        &mut self.config.auto_update,
+                        self.i18n.text("settings-auto-update"),
+                    )
+                    .changed()
+                {
+                    let _ = self.config.save();
+                }
 
                 ui.add_space(14.0_f32);
                 ui.separator();
@@ -1499,15 +1867,168 @@ impl PrismApp {
                     let _ = self.config.save();
                 }
 
-                ui.add_space(18.0_f32);
+                ui.add_space(14.0_f32);
+                ui.separator();
+                ui.add_space(14.0_f32);
 
-                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if ui.button(self.i18n.text("action-close")).clicked() {
-                        self.show_settings = false;
+                // Install directory display and custom chooser
+                ui.label(
+                    RichText::new(self.i18n.text("settings-install-directory"))
+                        .strong()
+                        .color(TEXT_PRIMARY),
+                );
+                ui.add_space(4.0_f32);
+
+                let dir_str = self
+                    .install_mgr
+                    .apps_root_dir()
+                    .map(|p| p.display().to_string())
+                    .unwrap_or_else(|_| "Default system app data directory".to_string());
+
+                ui.label(
+                    RichText::new(format!("Current: {}", dir_str))
+                        .size(12.0_f32)
+                        .color(TEXT_MUTED),
+                );
+                ui.add_space(4.0_f32);
+
+                ui.horizontal(|ui| {
+                    ui.text_edit_singleline(&mut self.custom_dir_input);
+
+                    if ui.button(self.i18n.text("action-save")).clicked() {
+                        let trimmed = self.custom_dir_input.trim();
+                        if trimmed.is_empty() {
+                            self.config.custom_install_dir = None;
+                        } else {
+                            self.config.custom_install_dir = Some(PathBuf::from(trimmed));
+                        }
+                        let _ = self.config.save();
+                        self.install_mgr =
+                            InstallationManager::new(self.config.custom_install_dir.clone());
                     }
+                });
+
+                ui.add_space(18.0_f32);
+                ui.separator();
+                ui.add_space(10.0_f32);
+
+                ui.horizontal(|ui| {
+                    if ui
+                        .button(self.i18n.text("settings-reset-defaults"))
+                        .clicked()
+                    {
+                        self.config.reset_to_defaults();
+                        let _ = self.config.save();
+                        self.i18n.set_language(Language::English);
+                        self.custom_dir_input = String::new();
+                        self.install_mgr = InstallationManager::new(None);
+                        let shared = SharedPreferences {
+                            language: "en".to_string(),
+                            launcher_version: SUITE_VERSION.to_string(),
+                        };
+                        let _ = shared.save();
+                    }
+
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        if ui.button(self.i18n.text("action-close")).clicked() {
+                            self.show_settings = false;
+                        }
+                    });
                 });
             });
         self.show_settings = open;
+    }
+
+    fn render_whats_new(&mut self, ui: &mut Ui) {
+        ui.add_space(16.0_f32);
+        ui.horizontal(|ui| {
+            ui.add_space(24.0_f32);
+            ui.vertical(|ui| {
+                ui.label(
+                    RichText::new(self.i18n.text("whats-new-title"))
+                        .size(20.0_f32)
+                        .strong()
+                        .color(TEXT_PRIMARY),
+                );
+                ui.label(
+                    RichText::new(
+                        "Latest release notes and improvements across all suite applications",
+                    )
+                    .size(12.0_f32)
+                    .color(TEXT_MUTED),
+                );
+            });
+        });
+
+        ui.add_space(16.0_f32);
+
+        if self.discovered_releases.is_empty() {
+            ui.horizontal(|ui| {
+                ui.add_space(24.0_f32);
+                ui.label(
+                    RichText::new(self.i18n.text("whats-new-no-releases"))
+                        .italics()
+                        .color(TEXT_MUTED),
+                );
+            });
+            return;
+        }
+
+        let releases = self.discovered_releases.clone();
+        for (app_name, release) in releases {
+            ui.horizontal(|ui| {
+                ui.add_space(24.0_f32);
+                let content_width = (ui.available_width() - 24.0_f32).max(200.0_f32);
+                egui::Frame::none()
+                    .fill(BG_CARD)
+                    .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
+                    .rounding(Rounding::same(8.0_f32))
+                    .inner_margin(egui::Margin::same(18.0_f32))
+                    .show(ui, |ui| {
+                        ui.set_width(content_width);
+                        ui.horizontal(|ui| {
+                            ui.label(
+                                RichText::new(&app_name)
+                                    .size(16.0_f32)
+                                    .strong()
+                                    .color(TEXT_PRIMARY),
+                            );
+
+                            ui.label(
+                                RichText::new(format!("v{}", release.version))
+                                    .size(13.0_f32)
+                                    .color(ACCENT_INDIGO),
+                            );
+
+                            if let Some(ref date) = release.published_at {
+                                let short_date = date.split('T').next().unwrap_or(date);
+                                ui.label(
+                                    RichText::new(short_date).size(12.0_f32).color(TEXT_MUTED),
+                                );
+                            }
+                        });
+
+                        ui.add_space(8.0_f32);
+                        ui.separator();
+                        ui.add_space(8.0_f32);
+
+                        if release.release_notes.trim().is_empty() {
+                            ui.label(
+                                RichText::new(self.i18n.text("details-no-notes"))
+                                    .italics()
+                                    .color(TEXT_MUTED),
+                            );
+                        } else {
+                            CommonMarkViewer::new().show(
+                                ui,
+                                &mut self.markdown_cache,
+                                &release.release_notes,
+                            );
+                        }
+                    });
+            });
+            ui.add_space(12.0_f32);
+        }
     }
 
     fn render_about_window(&mut self, ctx: &egui::Context) {

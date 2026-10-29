@@ -1,6 +1,7 @@
 pub mod archive;
 pub mod desktop;
 pub mod process;
+pub mod self_update;
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -14,6 +15,7 @@ use thiserror::Error;
 pub use archive::{extract_archive, ArchiveError};
 pub use desktop::{install_desktop_entry, remove_desktop_entry, DesktopError};
 pub use process::{is_binary_running, launch_detached};
+pub use self_update::apply_self_update;
 
 #[derive(Debug, Error)]
 pub enum InstallError {

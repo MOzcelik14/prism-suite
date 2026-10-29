@@ -1,6 +1,7 @@
 # Header & Navigation
 suite-subtitle = Yaratıcı Masaüstü Uygulama Paketi
 nav-apps = Uygulamalar
+nav-whats-new = Yenilikler
 
 # App Catalog: triM.
 app-trim-tagline = Masaüstü için hassas doğrusal olmayan video düzenleme
@@ -34,6 +35,9 @@ action-retry = Yeniden Dene
 action-details = Ayrıntılar
 action-launch-running = Çalışıyor
 action-close-app = Uygulamayı Kapat
+action-update-now = Şimdi Güncelle
+action-later = Daha Sonra
+action-view-notes = Notları Gör
 
 # Status Badges
 status-not-installed = Yüklü Değil
@@ -45,6 +49,7 @@ status-verifying = Doğrulanıyor...
 status-installing = Kuruluyor...
 status-running = Çalışıyor
 status-error = Hata
+status-launcher-updating = Başlatıcı güncelleniyor...
 
 # App Details Modal
 details-title = Uygulama Ayrıntıları
@@ -57,6 +62,13 @@ details-branch = Varsayılan Dal
 details-no-notes = Bu sürüm için sürüm notu girilmemiş.
 details-rollback-desc = Önceden kurulu olan sürüme geri dön
 
+# What's New View
+whats-new-title = Sürüm Yenilikleri ve Notlar
+whats-new-no-releases = Henüz sürüm notu bulunmuyor.
+
+# Banner
+banner-update-available = prisM. Suite v{ $version } güncellemesi mevcut!
+
 # Settings Dialog
 settings-title = Ayarlar
 settings-language = Dil
@@ -68,6 +80,14 @@ settings-channel-beta = Beta
 settings-keep-versions = Önceki Sürümleri Sakla
 settings-install-directory = Kurulum Dizini
 settings-check-updates-launch = Başlangıçta güncellemeleri denetle
+settings-check-frequency = Güncelleme Denetleme Sıklığı
+settings-freq-launch = Her Başlangıçta
+settings-freq-daily = Günlük
+settings-freq-weekly = Haftalık
+settings-freq-manual = Yalnızca Manuel
+settings-auto-update = Güncellemeleri otomatik indir ve uygula
+settings-browse = Gözat...
+settings-reset-defaults = Varsayılanlara Sıfırla
 
 # Uninstall Dialog
 uninstall-title = Uygulamayı Kaldır
@@ -91,3 +111,4 @@ msg-installed-success = Uygulama başarıyla kuruldu.
 msg-rollback-success = Önceki sürüme başarıyla geri dönüldü.
 msg-uninstall-success = Uygulama başarıyla kaldırıldı.
 msg-launched-success = Uygulama başlatıldı.
+msg-launcher-updated = prisM. Suite v{ $version } sürümüne güncellendi. Lütfen yeniden başlatın.

@@ -14,7 +14,10 @@ use sha2::{Digest, Sha256};
 use thiserror::Error;
 
 pub use cache::ReleaseCache;
-pub use github::{find_newest_compatible_release, parse_version, GitHubAsset, GitHubRelease};
+pub use github::{
+    find_newest_compatible_release, find_newest_compatible_release_for_name, parse_version,
+    GitHubAsset, GitHubRelease,
+};
 pub use verify::{parse_signature_bytes, verify_ed25519_signature, verify_sha256sums};
 
 /// Compile-time configurable Ed25519 public key for release signature verification.
@@ -104,16 +107,16 @@ impl NetworkClient {
         &self.client
     }
 
-    /// Fetches all GitHub releases for a given repository with caching.
-    pub async fn fetch_releases(
+    /// Fetches all GitHub releases for a given repository with caching using an arbitrary cache key.
+    pub async fn fetch_repo_releases(
         &self,
-        app_id: AppId,
+        cache_key: &str,
         repository_url: &str,
         force_refresh: bool,
     ) -> Result<Vec<GitHubRelease>, NetError> {
         // Check cache first (15-minute default TTL = 900 seconds)
         if !force_refresh {
-            if let Some(cached) = ReleaseCache::get(app_id, 900) {
+            if let Some(cached) = ReleaseCache::get_by_key(cache_key, 900) {
                 return Ok(cached);
             }
         }
@@ -133,7 +136,7 @@ impl NetworkClient {
         {
             Ok(resp) => resp,
             Err(e) => {
-                if let Some(cached) = ReleaseCache::get(app_id, i64::MAX) {
+                if let Some(cached) = ReleaseCache::get_by_key(cache_key, i64::MAX) {
                     return Ok(cached);
                 }
                 return Err(NetError::Offline(e.to_string()));
@@ -144,7 +147,7 @@ impl NetworkClient {
         if status == reqwest::StatusCode::FORBIDDEN
             || status == reqwest::StatusCode::TOO_MANY_REQUESTS
         {
-            if let Some(cached) = ReleaseCache::get(app_id, i64::MAX) {
+            if let Some(cached) = ReleaseCache::get_by_key(cache_key, i64::MAX) {
                 return Ok(cached);
             }
             return Err(NetError::RateLimited);
@@ -155,9 +158,40 @@ impl NetworkClient {
         }
 
         let releases: Vec<GitHubRelease> = response.error_for_status()?.json().await?;
-        let _ = ReleaseCache::set(app_id, releases.clone());
+        let _ = ReleaseCache::set_by_key(cache_key, releases.clone());
 
         Ok(releases)
+    }
+
+    /// Fetches all GitHub releases for a given app with caching.
+    pub async fn fetch_releases(
+        &self,
+        app_id: AppId,
+        repository_url: &str,
+        force_refresh: bool,
+    ) -> Result<Vec<GitHubRelease>, NetError> {
+        self.fetch_repo_releases(app_id.as_str(), repository_url, force_refresh)
+            .await
+    }
+
+    /// Discovers the newest compatible release for the launcher itself.
+    pub async fn discover_launcher_release(
+        &self,
+        channel: ReleaseChannel,
+        force_refresh: bool,
+    ) -> Result<Option<ReleaseInfo>, NetError> {
+        let releases = self
+            .fetch_repo_releases(
+                "prism-launcher",
+                prism_core::branding::LAUNCHER_REPO_URL,
+                force_refresh,
+            )
+            .await?;
+        let os = TargetOs::current();
+        let arch = TargetArch::current();
+        Ok(find_newest_compatible_release_for_name(
+            &releases, "prism", os, arch, channel,
+        ))
     }
 
     /// Discovers the newest compatible release for an app given current OS and CPU arch.

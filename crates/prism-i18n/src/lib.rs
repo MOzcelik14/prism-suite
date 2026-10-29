@@ -1,4 +1,5 @@
-use fluent_bundle::{FluentArgs, FluentBundle, FluentResource};
+pub use fluent_bundle::FluentArgs;
+use fluent_bundle::{FluentBundle, FluentResource};
 use std::sync::Arc;
 use unic_langid::{langid, LanguageIdentifier};
 
@@ -89,6 +90,13 @@ impl I18n {
     /// Resolves a localized string by key. Falls back to English, then to the key itself.
     pub fn text(&self, key: &str) -> String {
         self.text_args(key, None)
+    }
+
+    /// Convenience helper to resolve a string with a single named argument.
+    pub fn text_with_arg(&self, key: &str, arg_name: &str, arg_val: &str) -> String {
+        let mut args = FluentArgs::new();
+        args.set(arg_name, fluent_bundle::FluentValue::from(arg_val));
+        self.text_args(key, Some(&args))
     }
 
     /// Resolves a localized string by key with dynamic arguments.

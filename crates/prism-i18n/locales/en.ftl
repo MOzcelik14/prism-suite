@@ -1,6 +1,7 @@
 # Header & Navigation
 suite-subtitle = Creative Desktop Application Suite
 nav-apps = Applications
+nav-whats-new = What's New
 
 # App Catalog: triM.
 app-trim-tagline = Precision non-linear video editing for desktop
@@ -34,6 +35,9 @@ action-retry = Retry
 action-details = Details
 action-launch-running = Running
 action-close-app = Close Application
+action-update-now = Update Now
+action-later = Later
+action-view-notes = View Notes
 
 # Status Badges
 status-not-installed = Not Installed
@@ -45,6 +49,7 @@ status-verifying = Verifying...
 status-installing = Installing...
 status-running = Running
 status-error = Error
+status-launcher-updating = Updating launcher...
 
 # App Details Modal
 details-title = Application Details
@@ -57,6 +62,13 @@ details-branch = Default Branch
 details-no-notes = No release notes published for this version.
 details-rollback-desc = Revert to previously installed version
 
+# What's New View
+whats-new-title = Suite Release Highlights
+whats-new-no-releases = No release notes available yet.
+
+# Banner
+banner-update-available = Update to prisM. Suite v{ $version } is available!
+
 # Settings Dialog
 settings-title = Settings
 settings-language = Language
@@ -68,6 +80,14 @@ settings-channel-beta = Beta
 settings-keep-versions = Keep Previous Versions
 settings-install-directory = Installation Directory
 settings-check-updates-launch = Check for updates on startup
+settings-check-frequency = Check Frequency
+settings-freq-launch = Every Launch
+settings-freq-daily = Daily
+settings-freq-weekly = Weekly
+settings-freq-manual = Manual Only
+settings-auto-update = Automatically download and apply updates
+settings-browse = Browse...
+settings-reset-defaults = Reset to Defaults
 
 # Uninstall Dialog
 uninstall-title = Uninstall Application
@@ -91,3 +111,4 @@ msg-installed-success = Application installed successfully.
 msg-rollback-success = Successfully rolled back to previous version.
 msg-uninstall-success = Application uninstalled successfully.
 msg-launched-success = Application launched.
+msg-launcher-updated = prisM. Suite has been updated to v{ $version }. Please restart.

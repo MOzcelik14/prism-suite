@@ -16,17 +16,17 @@ pub struct ReleaseCacheEntry {
 pub struct ReleaseCache;
 
 impl ReleaseCache {
-    fn cache_file_path(app_id: AppId) -> Option<PathBuf> {
+    fn cache_file_path_for_key(key: &str) -> Option<PathBuf> {
         ProjectDirs::from("com", "prism", "prism-suite").map(|proj| {
             proj.cache_dir()
                 .join("releases")
-                .join(format!("{}.ron", app_id.as_str()))
+                .join(format!("{}.ron", key))
         })
     }
 
-    /// Loads cached releases if they exist and are within TTL.
-    pub fn get(app_id: AppId, ttl_seconds: i64) -> Option<Vec<GitHubRelease>> {
-        let path = Self::cache_file_path(app_id)?;
+    /// Loads cached releases by arbitrary key if they exist and are within TTL.
+    pub fn get_by_key(key: &str, ttl_seconds: i64) -> Option<Vec<GitHubRelease>> {
+        let path = Self::cache_file_path_for_key(key)?;
         if !path.exists() {
             return None;
         }
@@ -42,9 +42,9 @@ impl ReleaseCache {
         }
     }
 
-    /// Stores releases to disk cache.
-    pub fn set(app_id: AppId, releases: Vec<GitHubRelease>) -> Result<(), std::io::Error> {
-        if let Some(path) = Self::cache_file_path(app_id) {
+    /// Stores releases to disk cache by arbitrary key.
+    pub fn set_by_key(key: &str, releases: Vec<GitHubRelease>) -> Result<(), std::io::Error> {
+        if let Some(path) = Self::cache_file_path_for_key(key) {
             if let Some(parent) = path.parent() {
                 fs::create_dir_all(parent)?;
             }
@@ -56,5 +56,15 @@ impl ReleaseCache {
             fs::write(path, content)?;
         }
         Ok(())
+    }
+
+    /// Loads cached releases for an app ID if they exist and are within TTL.
+    pub fn get(app_id: AppId, ttl_seconds: i64) -> Option<Vec<GitHubRelease>> {
+        Self::get_by_key(app_id.as_str(), ttl_seconds)
+    }
+
+    /// Stores releases to disk cache for an app ID.
+    pub fn set(app_id: AppId, releases: Vec<GitHubRelease>) -> Result<(), std::io::Error> {
+        Self::set_by_key(app_id.as_str(), releases)
     }
 }

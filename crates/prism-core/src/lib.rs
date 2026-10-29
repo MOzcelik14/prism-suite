@@ -11,7 +11,7 @@ pub use branding::{
     SUITE_VERSION,
 };
 pub use catalog::{AppCatalog, AppEntry, AppId};
-pub use config::LauncherConfig;
+pub use config::{LauncherConfig, UpdateFrequency};
 pub use error::PrismError;
 pub use manifest::{AppReleaseManifest, ReleaseAsset, TargetArch, TargetOs};
 pub use shared::SharedPreferences;

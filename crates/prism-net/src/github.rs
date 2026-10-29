@@ -30,7 +30,7 @@ pub fn parse_version(raw: &str) -> Option<Version> {
     Version::parse(clean).ok()
 }
 
-/// Inspects GitHub releases and returns the newest compatible release for the current platform.
+/// Inspects GitHub releases and returns the newest compatible release for an AppId.
 pub fn find_newest_compatible_release(
     releases: &[GitHubRelease],
     app_id: AppId,
@@ -38,7 +38,18 @@ pub fn find_newest_compatible_release(
     arch: TargetArch,
     channel: ReleaseChannel,
 ) -> Option<ReleaseInfo> {
-    let app_prefix = format!("{}-", app_id.as_str());
+    find_newest_compatible_release_for_name(releases, app_id.as_str(), os, arch, channel)
+}
+
+/// Inspects GitHub releases and returns the newest compatible release for a binary name.
+pub fn find_newest_compatible_release_for_name(
+    releases: &[GitHubRelease],
+    app_name: &str,
+    os: TargetOs,
+    arch: TargetArch,
+    channel: ReleaseChannel,
+) -> Option<ReleaseInfo> {
+    let app_prefix = format!("{}-", app_name);
     let target_suffix = format!("-{}-{}.", os.as_str(), arch.as_str());
     let expected_ext = match os {
         TargetOs::Linux => ".tar.gz",
@@ -67,9 +78,8 @@ pub fn find_newest_compatible_release(
         if let Some(asset) = target_asset {
             // Extract version from filename or tag
             // Filename format: <app_id>-<version>-<os>-<arch>.<ext>
-            let version =
-                extract_version_from_filename(&asset.name, app_id.as_str(), &target_suffix)
-                    .or_else(|| parse_version(&release.tag_name));
+            let version = extract_version_from_filename(&asset.name, app_name, &target_suffix)
+                .or_else(|| parse_version(&release.tag_name));
 
             if let Some(ver) = version {
                 // Find optional checksums and signature files in the same release
@@ -206,5 +216,45 @@ mod tests {
             ReleaseChannel::Stable,
         );
         assert!(win.is_none());
+    }
+
+    #[test]
+    fn test_launcher_release_discovery() {
+        let releases = vec![GitHubRelease {
+            tag_name: "v0.2.0".to_string(),
+            name: Some("prisM. Suite 0.2.0".to_string()),
+            body: Some("Exciting launcher updates".to_string()),
+            draft: false,
+            prerelease: false,
+            published_at: Some("2026-10-25T10:00:00Z".to_string()),
+            assets: vec![
+                GitHubAsset {
+                    name: "prism-0.2.0-linux-x86_64.tar.gz".to_string(),
+                    size: 4096,
+                    browser_download_url: "https://example.com/prism-0.2.0-linux-x86_64.tar.gz"
+                        .to_string(),
+                },
+                GitHubAsset {
+                    name: "SHA256SUMS".to_string(),
+                    size: 80,
+                    browser_download_url: "https://example.com/SHA256SUMS".to_string(),
+                },
+            ],
+        }];
+
+        let launcher_release = find_newest_compatible_release_for_name(
+            &releases,
+            "prism",
+            TargetOs::Linux,
+            TargetArch::X86_64,
+            ReleaseChannel::Stable,
+        )
+        .expect("should match launcher release");
+
+        assert_eq!(launcher_release.version, Version::parse("0.2.0").unwrap());
+        assert_eq!(
+            launcher_release.asset_filename,
+            "prism-0.2.0-linux-x86_64.tar.gz"
+        );
     }
 }
