@@ -32,6 +32,8 @@ action-save = Save
 action-cancel = Cancel
 action-retry = Retry
 action-details = Details
+action-launch-running = Running
+action-close-app = Close Application
 
 # Status Badges
 status-not-installed = Not Installed
@@ -81,9 +83,11 @@ about-license = License
 about-source-code = Source Code
 about-copyright = © Murat Özçelik. All rights reserved.
 
-# Network & Error Messages
+# Network & Operational Messages
 error-rate-limit = GitHub API rate limit reached. Using cached releases if available.
 error-offline = Network connection offline. Using local cached releases.
+error-app-running = Application is currently running. Please close it first.
 msg-installed-success = Application installed successfully.
 msg-rollback-success = Successfully rolled back to previous version.
 msg-uninstall-success = Application uninstalled successfully.
+msg-launched-success = Application launched.

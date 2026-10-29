@@ -3,6 +3,7 @@ pub mod catalog;
 pub mod config;
 pub mod error;
 pub mod manifest;
+pub mod shared;
 pub mod state;
 
 pub use branding::{
@@ -13,4 +14,5 @@ pub use catalog::{AppCatalog, AppEntry, AppId};
 pub use config::LauncherConfig;
 pub use error::PrismError;
 pub use manifest::{AppReleaseManifest, ReleaseAsset, TargetArch, TargetOs};
+pub use shared::SharedPreferences;
 pub use state::{AppInstallState, ReleaseChannel, ReleaseInfo};

@@ -32,6 +32,8 @@ action-save = Kaydet
 action-cancel = İptal
 action-retry = Yeniden Dene
 action-details = Ayrıntılar
+action-launch-running = Çalışıyor
+action-close-app = Uygulamayı Kapat
 
 # Status Badges
 status-not-installed = Yüklü Değil
@@ -81,9 +83,11 @@ about-license = Lisans
 about-source-code = Kaynak Kodu
 about-copyright = © Murat Özçelik. Tüm hakları saklıdır.
 
-# Network & Error Messages
+# Network & Operational Messages
 error-rate-limit = GitHub API istek sınırına ulaşıldı. Varsa önbellekteki sürümler kullanılıyor.
 error-offline = Ağ bağlantısı çevrimdışı. Varsa yerel önbellek kullanılıyor.
+error-app-running = Uygulama şu anda çalışıyor. Lütfen önce uygulamayı kapatın.
 msg-installed-success = Uygulama başarıyla kuruldu.
 msg-rollback-success = Önceki sürüme başarıyla geri dönüldü.
 msg-uninstall-success = Uygulama başarıyla kaldırıldı.
+msg-launched-success = Uygulama başlatıldı.

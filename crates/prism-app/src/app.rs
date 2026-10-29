@@ -14,6 +14,7 @@ use prism_core::branding::{
 };
 use prism_core::catalog::{AppCatalog, AppId};
 use prism_core::config::LauncherConfig;
+use prism_core::shared::SharedPreferences;
 use prism_core::state::{AppInstallState, ReleaseChannel, ReleaseInfo};
 use prism_i18n::{I18n, Language};
 use prism_install::InstallationManager;
@@ -68,6 +69,7 @@ pub struct PrismApp {
     event_rx: Receiver<AppEvent>,
     markdown_cache: CommonMarkCache,
     states: HashMap<AppId, AppInstallState>,
+    running_pids: HashMap<AppId, u32>,
     cancel_tokens: HashMap<AppId, Arc<AtomicBool>>,
     selected_detail_app: Option<AppId>,
     uninstall_target_app: Option<AppId>,
@@ -75,6 +77,7 @@ pub struct PrismApp {
     show_settings: bool,
     show_about: bool,
     is_checking_releases: bool,
+    last_process_poll: std::time::Instant,
     status_message: Option<(String, std::time::Instant)>,
 }
 
@@ -94,11 +97,25 @@ impl PrismApp {
 
         let (event_tx, event_rx) = crossbeam_channel::unbounded();
 
-        // Initial states: detect installed state from filesystem
+        // Write shared preferences for child applications
+        let shared_prefs = SharedPreferences {
+            language: i18n.language().as_code().to_string(),
+            launcher_version: SUITE_VERSION.to_string(),
+        };
+        let _ = shared_prefs.save();
+
+        // Initial states: detect installed state and running status from filesystem
         let mut states = HashMap::new();
+        let running_pids = HashMap::new();
+
         for app in catalog.all() {
-            let detected = install_mgr.detect_state(app);
-            states.insert(app.id, detected);
+            let is_running = install_mgr.is_running(app, None);
+            if is_running {
+                states.insert(app.id, AppInstallState::Running);
+            } else {
+                let detected = install_mgr.detect_state(app);
+                states.insert(app.id, detected);
+            }
         }
 
         let mut app = Self {
@@ -112,6 +129,7 @@ impl PrismApp {
             event_rx,
             markdown_cache: CommonMarkCache::default(),
             states,
+            running_pids,
             cancel_tokens: HashMap::new(),
             selected_detail_app: None,
             uninstall_target_app: None,
@@ -119,6 +137,7 @@ impl PrismApp {
             show_settings: false,
             show_about: false,
             is_checking_releases: false,
+            last_process_poll: std::time::Instant::now(),
             status_message: None,
         };
 
@@ -158,12 +177,37 @@ impl PrismApp {
         }
     }
 
+    /// Launches an application as a detached process.
+    pub fn launch_application(&mut self, app_id: AppId) {
+        if let Some(app) = self.catalog.get(app_id) {
+            match self.install_mgr.launch_app(app) {
+                Ok(pid) => {
+                    self.running_pids.insert(app_id, pid);
+                    self.states.insert(app_id, AppInstallState::Running);
+                    self.set_temporary_status(self.i18n.text("msg-launched-success"));
+                }
+                Err(e) => {
+                    self.set_temporary_status(format!("Launch failed: {}", e));
+                }
+            }
+        }
+    }
+
     /// Triggers the full verified download, verify, extract, and atomic install flow.
     pub fn start_install_pipeline(&mut self, app_id: AppId, release: ReleaseInfo) {
         let app = match self.catalog.get(app_id) {
             Some(a) => a.clone(),
             None => return,
         };
+
+        // Safety guard: prevent install/update if app is running
+        if self
+            .install_mgr
+            .is_running(&app, self.running_pids.get(&app_id).copied())
+        {
+            self.set_temporary_status(self.i18n.text("error-app-running"));
+            return;
+        }
 
         let cancel_token = Arc::new(AtomicBool::new(false));
         self.cancel_tokens.insert(app_id, cancel_token.clone());
@@ -229,7 +273,6 @@ impl PrismApp {
                 new_state: AppInstallState::Verifying,
             });
 
-            // Checksum verification
             if let Some(ref checksums_url) = release.checksums_url {
                 if let Ok(manifest_content) = client.fetch_text(checksums_url).await {
                     if let Err(e) =
@@ -242,7 +285,6 @@ impl PrismApp {
                         return;
                     }
 
-                    // Signature verification
                     if let Some(ref sig_url) = release.signature_url {
                         if let Ok(sig_content) = client.fetch_text(sig_url).await {
                             if let Ok(pubkey) = NetworkClient::public_key() {
@@ -315,13 +357,21 @@ impl PrismApp {
     /// Triggers a rollback to the previous version.
     pub fn trigger_rollback(&mut self, app_id: AppId) {
         if let Some(app) = self.catalog.get(app_id) {
+            if self
+                .install_mgr
+                .is_running(app, self.running_pids.get(&app_id).copied())
+            {
+                self.set_temporary_status(self.i18n.text("error-app-running"));
+                return;
+            }
+
             match self.install_mgr.rollback(app) {
                 Ok(restored) => {
                     let prev = self.install_mgr.detect_previous_version(app);
                     self.states.insert(
                         app_id,
                         AppInstallState::Installed {
-                            version: restored.clone(),
+                            version: restored,
                             previous_version: prev,
                             latest_release: None,
                         },
@@ -335,9 +385,18 @@ impl PrismApp {
         }
     }
 
-    /// Executes uninstallation for the selected target app.
+    /// Executes uninstallation for the selected target app with safety check.
     pub fn execute_uninstall(&mut self, app_id: AppId, remove_user_data: bool) {
         if let Some(app) = self.catalog.get(app_id) {
+            if self
+                .install_mgr
+                .is_running(app, self.running_pids.get(&app_id).copied())
+            {
+                self.set_temporary_status(self.i18n.text("error-app-running"));
+                self.uninstall_target_app = None;
+                return;
+            }
+
             match self.install_mgr.uninstall(app, remove_user_data) {
                 Ok(()) => {
                     self.states.insert(
@@ -358,6 +417,38 @@ impl PrismApp {
 
     fn set_temporary_status(&mut self, msg: String) {
         self.status_message = Some((msg, std::time::Instant::now()));
+    }
+
+    fn poll_process_status(&mut self) {
+        // Poll every 1.5 seconds to detect running/closed applications
+        if self.last_process_poll.elapsed().as_millis() < 1500 {
+            return;
+        }
+        self.last_process_poll = std::time::Instant::now();
+
+        let apps = self.catalog.all().to_vec();
+        for app in apps {
+            let pid = self.running_pids.get(&app.id).copied();
+            let is_running = self.install_mgr.is_running(&app, pid);
+
+            let current =
+                self.states
+                    .get(&app.id)
+                    .cloned()
+                    .unwrap_or(AppInstallState::NotInstalled {
+                        latest_release: None,
+                    });
+
+            if is_running {
+                if current != AppInstallState::Running {
+                    self.states.insert(app.id, AppInstallState::Running);
+                }
+            } else if current == AppInstallState::Running {
+                self.running_pids.remove(&app.id);
+                let detected = self.install_mgr.detect_state(&app);
+                self.states.insert(app.id, detected);
+            }
+        }
     }
 
     fn handle_incoming_events(&mut self) {
@@ -494,6 +585,7 @@ impl PrismApp {
 impl eframe::App for PrismApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.handle_incoming_events();
+        self.poll_process_status();
 
         if let Some((_, created)) = self.status_message {
             if created.elapsed().as_secs() > 4 {
@@ -722,7 +814,6 @@ impl PrismApp {
 
                                 ui.add_space(2.0_f32);
 
-                                // If downloading, show progress bar inline
                                 if let AppInstallState::Downloading { progress, .. } = current_state
                                 {
                                     ui.add(ProgressBar::new(progress).desired_width(280.0_f32));
@@ -876,7 +967,6 @@ impl PrismApp {
                     if let Some(ref rel) = latest_release {
                         self.start_install_pipeline(app.id, rel.clone());
                     } else {
-                        // Demo fallback install
                         self.states.insert(
                             app.id,
                             AppInstallState::Installed {
@@ -900,7 +990,7 @@ impl PrismApp {
 
                 ui.add_enabled(false, btn);
             }
-            AppInstallState::Installed { version, .. } => {
+            AppInstallState::Installed { .. } => {
                 let launch_btn = Button::new(
                     RichText::new(self.i18n.text("action-launch"))
                         .size(13.0_f32)
@@ -912,11 +1002,7 @@ impl PrismApp {
                 .min_size(vec2(86.0_f32, 32.0_f32));
 
                 if ui.add(launch_btn).clicked() {
-                    self.states.insert(app.id, AppInstallState::Running);
-                    self.set_temporary_status(format!(
-                        "Launching {} v{}...",
-                        app.display_name, version
-                    ));
+                    self.launch_application(app.id);
                 }
 
                 ui.add_space(4.0_f32);
@@ -962,7 +1048,7 @@ impl PrismApp {
                 .min_size(vec2(72.0_f32, 32.0_f32));
 
                 if ui.add(launch_btn).clicked() {
-                    self.states.insert(app.id, AppInstallState::Running);
+                    self.launch_application(app.id);
                 }
             }
             AppInstallState::Downloading { .. } => {
@@ -986,8 +1072,8 @@ impl PrismApp {
                 ui.label(RichText::new("⏳").size(16.0_f32));
             }
             AppInstallState::Running => {
-                let stop_btn = Button::new(
-                    RichText::new(self.i18n.text("status-running"))
+                let running_label = Button::new(
+                    RichText::new(self.i18n.text("action-launch-running"))
                         .size(13.0_f32)
                         .color(ACCENT_CYAN),
                 )
@@ -995,16 +1081,7 @@ impl PrismApp {
                 .rounding(Rounding::same(6.0_f32))
                 .min_size(vec2(94.0_f32, 32.0_f32));
 
-                if ui.add(stop_btn).clicked() {
-                    self.states.insert(
-                        app.id,
-                        AppInstallState::Installed {
-                            version: "0.1.0".to_string(),
-                            previous_version: None,
-                            latest_release: None,
-                        },
-                    );
-                }
+                ui.add_enabled(false, running_label);
             }
             AppInstallState::Error { .. } => {
                 let retry_btn = Button::new(
@@ -1111,13 +1188,14 @@ impl PrismApp {
                             .color(TEXT_PRIMARY),
                         );
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            let is_running = current_state == AppInstallState::Running;
                             let rollback_btn = Button::new(
                                 RichText::new(self.i18n.text("action-rollback")).size(12.0_f32),
                             )
                             .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
                             .rounding(Rounding::same(6.0_f32));
 
-                            if ui.add(rollback_btn).clicked() {
+                            if ui.add_enabled(!is_running, rollback_btn).clicked() {
                                 self.trigger_rollback(app.id);
                             }
                         });
@@ -1291,6 +1369,13 @@ impl PrismApp {
                         self.i18n.set_language(Language::English);
                         self.config.language = Some("en".to_string());
                         let _ = self.config.save();
+
+                        // Sync shared preferences
+                        let shared = SharedPreferences {
+                            language: "en".to_string(),
+                            launcher_version: SUITE_VERSION.to_string(),
+                        };
+                        let _ = shared.save();
                     }
 
                     if ui
@@ -1303,6 +1388,13 @@ impl PrismApp {
                         self.i18n.set_language(Language::Turkish);
                         self.config.language = Some("tr".to_string());
                         let _ = self.config.save();
+
+                        // Sync shared preferences
+                        let shared = SharedPreferences {
+                            language: "tr".to_string(),
+                            launcher_version: SUITE_VERSION.to_string(),
+                        };
+                        let _ = shared.save();
                     }
                 });
 

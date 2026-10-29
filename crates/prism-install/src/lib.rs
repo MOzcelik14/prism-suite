@@ -1,4 +1,6 @@
 pub mod archive;
+pub mod desktop;
+pub mod process;
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -10,6 +12,8 @@ use prism_core::state::AppInstallState;
 use thiserror::Error;
 
 pub use archive::{extract_archive, ArchiveError};
+pub use desktop::{install_desktop_entry, remove_desktop_entry, DesktopError};
+pub use process::{is_binary_running, launch_detached};
 
 #[derive(Debug, Error)]
 pub enum InstallError {
@@ -19,6 +23,9 @@ pub enum InstallError {
     #[error("Archive error: {0}")]
     Archive(#[from] ArchiveError),
 
+    #[error("Desktop integration error: {0}")]
+    Desktop(#[from] DesktopError),
+
     #[error("Installation directory could not be determined")]
     NoInstallDir,
 
@@ -27,6 +34,9 @@ pub enum InstallError {
 
     #[error("Rollback failed: No previous version available to restore")]
     NoPreviousVersion,
+
+    #[error("Application is currently running")]
+    AppCurrentlyRunning,
 }
 
 impl From<InstallError> for PrismError {
@@ -35,7 +45,7 @@ impl From<InstallError> for PrismError {
     }
 }
 
-/// Manages installation directories and application binaries on the local filesystem.
+/// Manages installation directories, application binaries, and process execution on the local filesystem.
 pub struct InstallationManager {
     custom_root: Option<PathBuf>,
 }
@@ -200,7 +210,6 @@ impl InstallationManager {
 
         if current_link.exists() {
             if let Ok(existing_target) = fs::read_link(&current_link) {
-                // If already pointing to the same version, don't update previous
                 if existing_target != target_version_dir {
                     let _ = fs::remove_file(&previous_link);
                     create_symlink(&existing_target, &previous_link)?;
@@ -213,6 +222,11 @@ impl InstallationManager {
 
         // 6. Prune old versions exceeding keep_count
         self.clean_old_versions(app, keep_count)?;
+
+        // 7. Install desktop integration (.desktop file and shortcut)
+        if let Ok(bin_path) = self.app_binary_path(app) {
+            let _ = install_desktop_entry(app, &bin_path);
+        }
 
         Ok(())
     }
@@ -238,7 +252,6 @@ impl InstallationManager {
             if current_link.exists() {
                 let _ = fs::remove_dir_all(&current_link);
             }
-            // On Windows, create directory junction or symlink
             let _ = std::os::windows::fs::symlink_dir(target_version_dir, &current_link);
         }
 
@@ -259,13 +272,32 @@ impl InstallationManager {
             .ok_or(InstallError::NoPreviousVersion)?
             .to_string();
 
-        // Switch current to previous target
         self.switch_current_link(app, &target)?;
-
-        // Remove previous link since we just rolled back to it
         let _ = fs::remove_file(&prev_link);
 
+        // Update desktop integration to point to active executable
+        if let Ok(bin_path) = self.app_binary_path(app) {
+            let _ = install_desktop_entry(app, &bin_path);
+        }
+
         Ok(restored_version)
+    }
+
+    /// Launches an installed application as a detached process.
+    pub fn launch_app(&self, app: &AppEntry) -> Result<u32, InstallError> {
+        let bin_path = self.app_binary_path(app)?;
+        if !bin_path.exists() {
+            return Err(InstallError::ExecutableNotFound(bin_path));
+        }
+
+        let working_dir = bin_path.parent().unwrap_or_else(|| Path::new("."));
+
+        launch_detached(&bin_path, working_dir).map_err(InstallError::Io)
+    }
+
+    /// Checks if the application is currently running.
+    pub fn is_running(&self, app: &AppEntry, known_pid: Option<u32>) -> bool {
+        is_binary_running(&app.primary_binary_name, known_pid)
     }
 
     /// Cleans older versions, keeping the specified number of newest versions.
@@ -287,7 +319,6 @@ impl InstallationManager {
             }
         }
 
-        // Sort by folder modification time descending
         version_dirs.sort_by_key(|p| fs::metadata(p).and_then(|m| m.modified()).ok());
         version_dirs.reverse();
 
@@ -317,6 +348,9 @@ impl InstallationManager {
 
     /// Uninstalls an application from disk.
     pub fn uninstall(&self, app: &AppEntry, remove_user_data: bool) -> Result<(), InstallError> {
+        // Remove desktop integration first
+        let _ = remove_desktop_entry(app);
+
         let app_dir = self.app_dir(app)?;
         if app_dir.exists() {
             fs::remove_dir_all(&app_dir)?;
