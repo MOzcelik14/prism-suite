@@ -11,6 +11,8 @@ pub struct LauncherConfig {
     pub language: Option<String>,
     /// Selected update release channel.
     pub release_channel: ReleaseChannel,
+    /// Number of previous versions to retain for rollback (default: 2).
+    pub keep_versions_count: usize,
     /// Custom root installation directory for apps. Defaults to system app data directory.
     pub custom_install_dir: Option<PathBuf>,
     /// Automatically check for updates on startup.
@@ -22,6 +24,7 @@ impl Default for LauncherConfig {
         Self {
             language: None,
             release_channel: ReleaseChannel::default(),
+            keep_versions_count: 2,
             custom_install_dir: None,
             check_updates_on_launch: true,
         }

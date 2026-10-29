@@ -19,3 +19,4 @@ semver.workspace = true
 ron.workspace = true
 directories.workspace = true
 chrono.workspace = true
+base64.workspace = true

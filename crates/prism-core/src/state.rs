@@ -44,10 +44,12 @@ pub enum AppInstallState {
     NoReleaseAvailable,
     Installed {
         version: String,
+        previous_version: Option<String>,
         latest_release: Option<ReleaseInfo>,
     },
     UpdateAvailable {
         current_version: String,
+        previous_version: Option<String>,
         latest_release: ReleaseInfo,
     },
     Downloading {
@@ -89,6 +91,18 @@ impl AppInstallState {
             AppInstallState::UpdateAvailable {
                 current_version, ..
             } => Some(current_version.as_str()),
+            _ => None,
+        }
+    }
+
+    pub fn previous_version(&self) -> Option<&str> {
+        match self {
+            AppInstallState::Installed {
+                previous_version, ..
+            } => previous_version.as_deref(),
+            AppInstallState::UpdateAvailable {
+                previous_version, ..
+            } => previous_version.as_deref(),
             _ => None,
         }
     }

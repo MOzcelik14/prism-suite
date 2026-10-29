@@ -1,5 +1,9 @@
 pub mod cache;
 pub mod github;
+pub mod verify;
+
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use ed25519_dalek::VerifyingKey;
 use prism_core::catalog::{AppEntry, AppId};
@@ -11,6 +15,7 @@ use thiserror::Error;
 
 pub use cache::ReleaseCache;
 pub use github::{find_newest_compatible_release, parse_version, GitHubAsset, GitHubRelease};
+pub use verify::{parse_signature_bytes, verify_ed25519_signature, verify_sha256sums};
 
 /// Compile-time configurable Ed25519 public key for release signature verification.
 /// In production, set `PRISM_PUBLIC_KEY=<hex-or-base64>` at build time.
@@ -21,6 +26,9 @@ pub const DEFAULT_ED25519_PUBLIC_KEY_HEX: &str = match option_env!("PRISM_PUBLIC
 
 #[derive(Debug, Error)]
 pub enum NetError {
+    #[error("Operation cancelled by user")]
+    Cancelled,
+
     #[error("GitHub API rate limit exceeded. Please try again later.")]
     RateLimited,
 
@@ -43,6 +51,7 @@ pub enum NetError {
 impl From<NetError> for PrismError {
     fn from(err: NetError) -> Self {
         match err {
+            NetError::Cancelled => PrismError::Network("Download cancelled".to_string()),
             NetError::RateLimited => {
                 PrismError::Network("GitHub API rate limit exceeded".to_string())
             }
@@ -124,7 +133,6 @@ impl NetworkClient {
         {
             Ok(resp) => resp,
             Err(e) => {
-                // If offline or network error, fallback to existing cache regardless of TTL
                 if let Some(cached) = ReleaseCache::get(app_id, i64::MAX) {
                     return Ok(cached);
                 }
@@ -136,7 +144,6 @@ impl NetworkClient {
         if status == reqwest::StatusCode::FORBIDDEN
             || status == reqwest::StatusCode::TOO_MANY_REQUESTS
         {
-            // Check for rate limit
             if let Some(cached) = ReleaseCache::get(app_id, i64::MAX) {
                 return Ok(cached);
             }
@@ -144,7 +151,6 @@ impl NetworkClient {
         }
 
         if status == reqwest::StatusCode::NOT_FOUND {
-            // Repository exists but has no releases or repo is 404
             return Ok(Vec::new());
         }
 
@@ -169,6 +175,78 @@ impl NetworkClient {
         Ok(find_newest_compatible_release(
             &releases, app.id, os, arch, channel,
         ))
+    }
+
+    /// Downloads a resource over HTTP with chunk streaming, progress callbacks, and cancellation support.
+    pub async fn download_with_progress<F>(
+        &self,
+        url: &str,
+        cancel_flag: Option<Arc<AtomicBool>>,
+        mut on_progress: F,
+    ) -> Result<Vec<u8>, NetError>
+    where
+        F: FnMut(u64, Option<u64>, f32) + Send + 'static,
+    {
+        if let Some(ref cancel) = cancel_flag {
+            if cancel.load(Ordering::Relaxed) {
+                return Err(NetError::Cancelled);
+            }
+        }
+
+        let mut response = self
+            .client
+            .get(url)
+            .send()
+            .await
+            .map_err(|e| NetError::Offline(e.to_string()))?
+            .error_for_status()?;
+
+        let total_size = response.content_length();
+        let mut downloaded: u64 = 0;
+        let mut buffer = Vec::with_capacity(total_size.unwrap_or(1024 * 1024) as usize);
+
+        while let Some(chunk) = response
+            .chunk()
+            .await
+            .map_err(|e| NetError::Offline(e.to_string()))?
+        {
+            if let Some(ref cancel) = cancel_flag {
+                if cancel.load(Ordering::Relaxed) {
+                    return Err(NetError::Cancelled);
+                }
+            }
+
+            buffer.extend_from_slice(&chunk);
+            downloaded += chunk.len() as u64;
+
+            let progress = if let Some(total) = total_size {
+                if total > 0 {
+                    (downloaded as f32 / total as f32).min(1.0)
+                } else {
+                    0.0
+                }
+            } else {
+                0.0
+            };
+
+            on_progress(downloaded, total_size, progress);
+        }
+
+        Ok(buffer)
+    }
+
+    /// Downloads text content (e.g. SHA256SUMS or SHA256SUMS.sig).
+    pub async fn fetch_text(&self, url: &str) -> Result<String, NetError> {
+        let resp = self
+            .client
+            .get(url)
+            .send()
+            .await
+            .map_err(|e| NetError::Offline(e.to_string()))?
+            .error_for_status()?;
+        resp.text()
+            .await
+            .map_err(|e| NetError::Offline(e.to_string()))
     }
 
     /// Verifies that data matches an expected SHA-256 hash (hex string).

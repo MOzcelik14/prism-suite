@@ -2435,12 +2435,16 @@ dependencies = [
 name = "prism-install"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "directories",
+ "ed25519-dalek",
  "flate2",
  "log",
  "prism-core",
+ "prism-net",
  "tar",
  "thiserror 1.0.69",
+ "tokio",
  "zip",
 ]
 
@@ -2448,6 +2452,7 @@ dependencies = [
 name = "prism-net"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "chrono",
  "directories",
  "ed25519-dalek",

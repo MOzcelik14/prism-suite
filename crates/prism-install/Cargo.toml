@@ -14,3 +14,9 @@ flate2.workspace = true
 directories.workspace = true
 thiserror.workspace = true
 log.workspace = true
+
+[dev-dependencies]
+prism-net.workspace = true
+ed25519-dalek.workspace = true
+tokio.workspace = true
+base64.workspace = true

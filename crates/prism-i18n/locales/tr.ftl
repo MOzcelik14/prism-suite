@@ -22,6 +22,8 @@ action-launch = Başlat
 action-install = Yükle
 action-update = Güncelle
 action-uninstall = Kaldır
+action-rollback = Geri Al
+action-cancel-download = İptal Et
 action-settings = Ayarlar
 action-about = Hakkında
 action-close = Kapat
@@ -51,6 +53,7 @@ details-published-at = Yayınlanma Tarihi
 details-repository = Kaynak Deposu
 details-branch = Varsayılan Dal
 details-no-notes = Bu sürüm için sürüm notu girilmemiş.
+details-rollback-desc = Önceden kurulu olan sürüme geri dön
 
 # Settings Dialog
 settings-title = Ayarlar
@@ -60,8 +63,15 @@ settings-language-tr = Türkçe
 settings-channel = Güncelleme Kanalı
 settings-channel-stable = Kararlı (Stable)
 settings-channel-beta = Beta
+settings-keep-versions = Önceki Sürümleri Sakla
 settings-install-directory = Kurulum Dizini
 settings-check-updates-launch = Başlangıçta güncellemeleri denetle
+
+# Uninstall Dialog
+uninstall-title = Uygulamayı Kaldır
+uninstall-confirm-msg = Bu uygulamayı sisteminizden kaldırmak istediğinizden emin misiniz?
+uninstall-remove-data = Kullanıcı yapılandırmasını ve uygulama verilerini de sil
+uninstall-confirm-btn = Kaldır
 
 # About Dialog
 about-title = prisM. Suite Hakkında
@@ -74,3 +84,6 @@ about-copyright = © Murat Özçelik. Tüm hakları saklıdır.
 # Network & Error Messages
 error-rate-limit = GitHub API istek sınırına ulaşıldı. Varsa önbellekteki sürümler kullanılıyor.
 error-offline = Ağ bağlantısı çevrimdışı. Varsa yerel önbellek kullanılıyor.
+msg-installed-success = Uygulama başarıyla kuruldu.
+msg-rollback-success = Önceki sürüme başarıyla geri dönüldü.
+msg-uninstall-success = Uygulama başarıyla kaldırıldı.
