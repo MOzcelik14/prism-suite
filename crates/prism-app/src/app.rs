@@ -128,7 +128,7 @@ pub struct PrismApp {
     dismissed_launcher_update: bool,
     discovered_releases: Vec<(String, ReleaseInfo)>,
     custom_dir_input: String,
-    logo_texture: Option<egui::TextureHandle>,
+    logo_textures: HashMap<u32, egui::TextureHandle>,
     app_textures: HashMap<AppId, egui::TextureHandle>,
 }
 
@@ -202,7 +202,7 @@ impl PrismApp {
             dismissed_launcher_update: false,
             discovered_releases: Vec::new(),
             custom_dir_input,
-            logo_texture: None,
+            logo_textures: HashMap::new(),
             app_textures: HashMap::new(),
         };
 
@@ -597,6 +597,21 @@ impl PrismApp {
         self.status_message = Some((msg, std::time::Instant::now()));
     }
 
+    /// Returns a texture of the SVG logo rasterized for `points` logical size at the
+    /// current display scale, so it stays sharp at any size or DPI.
+    fn suite_logo_texture(&mut self, ctx: &egui::Context, points: f32) -> Option<egui::TextureId> {
+        let px = (points * ctx.pixels_per_point()).round().max(8.0) as u32;
+        if let std::collections::hash_map::Entry::Vacant(entry) = self.logo_textures.entry(px) {
+            let image = crate::logo::render_logo_image(px)?;
+            entry.insert(ctx.load_texture(
+                format!("prism_logo_{px}"),
+                image,
+                egui::TextureOptions::LINEAR,
+            ));
+        }
+        self.logo_textures.get(&px).map(|t| t.id())
+    }
+
     fn poll_process_status(&mut self) {
         // Poll every 1.5 seconds to detect running/closed applications
         if self.last_process_poll.elapsed().as_millis() < 1500 {
@@ -821,14 +836,8 @@ impl eframe::App for PrismApp {
             }
         }
 
-        // Lazy load app logo texture
-        if self.logo_texture.is_none() {
-            let image = egui::ColorImage::from_rgba_unmultiplied(
-                [256, 256],
-                include_bytes!("../../../assets/icon.rgba"),
-            );
-            self.logo_texture = Some(ctx.load_texture("prism_logo", image, Default::default()));
-        }
+        // Crisp SVG logo textures rasterized at the exact physical pixel size
+        let header_logo = self.suite_logo_texture(ctx, 36.0_f32);
 
         // Lazy load authentic application icon textures
         if self.app_textures.is_empty() {
@@ -866,8 +875,8 @@ impl eframe::App for PrismApp {
             )
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
-                    if let Some(ref tex) = self.logo_texture {
-                        ui.image((tex.id(), vec2(36.0_f32, 36.0_f32)));
+                    if let Some(tex_id) = header_logo {
+                        ui.image((tex_id, vec2(36.0_f32, 36.0_f32)));
                     } else {
                         let (logo_rect, _) =
                             ui.allocate_exact_size(vec2(36.0_f32, 36.0_f32), egui::Sense::hover());
@@ -2859,6 +2868,7 @@ impl PrismApp {
     }
 
     fn render_about_window(&mut self, ctx: &egui::Context) {
+        let about_logo = self.suite_logo_texture(ctx, 80.0_f32);
         let mut open = self.show_about;
         Window::new(self.i18n.text("about-title"))
             .open(&mut open)
@@ -2870,8 +2880,8 @@ impl PrismApp {
                 ui.add_space(8.0_f32);
 
                 ui.vertical_centered(|ui| {
-                    if let Some(ref tex) = self.logo_texture {
-                        ui.image((tex.id(), vec2(80.0_f32, 80.0_f32)));
+                    if let Some(tex_id) = about_logo {
+                        ui.image((tex_id, vec2(80.0_f32, 80.0_f32)));
                     } else {
                         let (logo_rect, _) =
                             ui.allocate_exact_size(vec2(64.0_f32, 64.0_f32), egui::Sense::hover());
