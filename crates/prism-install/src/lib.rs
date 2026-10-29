@@ -105,18 +105,12 @@ impl InstallationManager {
             app.primary_binary_name.clone()
         };
 
-        let direct_bin = app_dir.join("current").join(&binary_name);
-        if direct_bin.exists() {
-            return Ok(direct_bin);
+        let current_dir = app_dir.join("current");
+        if let Some(found) = find_executable_in_dir(&current_dir, &binary_name) {
+            return Ok(found);
         }
 
-        // Check if inside bin/ subdirectory
-        let sub_bin = app_dir.join("current").join("bin").join(&binary_name);
-        if sub_bin.exists() {
-            return Ok(sub_bin);
-        }
-
-        Ok(direct_bin)
+        Ok(current_dir.join(&binary_name))
     }
 
     /// Detects the previous installed version if a valid `previous` link exists.
@@ -209,6 +203,22 @@ impl InstallationManager {
         fs::rename(&staging_dir, &target_version_dir)?;
         let _ = fs::remove_dir(app_dir.join("staging"));
 
+        // If binary is in a subdirectory (e.g. triM-1.2.0-linux-x86_64/trim), link or copy to root of version dir
+        let binary_name = if cfg!(windows) {
+            format!("{}.exe", app.primary_binary_name)
+        } else {
+            app.primary_binary_name.clone()
+        };
+        let direct_bin = target_version_dir.join(&binary_name);
+        if !direct_bin.exists() {
+            if let Some(found) = find_executable_in_dir(&target_version_dir, &binary_name) {
+                #[cfg(unix)]
+                let _ = std::os::unix::fs::symlink(&found, &direct_bin);
+                #[cfg(windows)]
+                let _ = fs::copy(&found, &direct_bin);
+            }
+        }
+
         // 4. Update previous link if current link already exists
         let current_link = self.current_link_path(app)?;
         let previous_link = self.previous_link_path(app)?;
@@ -258,6 +268,46 @@ impl InstallationManager {
                 let _ = fs::remove_dir_all(&current_link);
             }
             let _ = std::os::windows::fs::symlink_dir(target_version_dir, &current_link);
+        }
+
+        Ok(())
+    }
+
+    /// Directly installs a local binary into `versions/<version>/` and sets `current`.
+    pub fn install_local_binary(
+        &self,
+        app: &AppEntry,
+        version: &str,
+        source_binary_path: &Path,
+    ) -> Result<(), InstallError> {
+        let app_dir = self.app_dir(app)?;
+        let target_version_dir = app_dir.join("versions").join(version);
+        fs::create_dir_all(&target_version_dir)?;
+
+        let binary_name = if cfg!(windows) {
+            format!("{}.exe", app.primary_binary_name)
+        } else {
+            app.primary_binary_name.clone()
+        };
+
+        let target_bin = target_version_dir.join(&binary_name);
+        if target_bin.exists() {
+            let _ = fs::remove_file(&target_bin);
+        }
+        fs::copy(source_binary_path, &target_bin)?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = fs::set_permissions(&target_bin, fs::Permissions::from_mode(0o755));
+        }
+
+        let ver_file = target_version_dir.join("version.txt");
+        let _ = fs::write(ver_file, version);
+
+        self.switch_current_link(app, &target_version_dir)?;
+
+        if let Ok(bin_path) = self.app_binary_path(app) {
+            let _ = install_desktop_entry(app, &bin_path);
         }
 
         Ok(())
@@ -370,6 +420,64 @@ impl InstallationManager {
 
         Ok(())
     }
+}
+
+fn find_executable_in_dir(root: &Path, binary_name: &str) -> Option<PathBuf> {
+    // 1. Direct path: root/<binary_name>
+    let direct = root.join(binary_name);
+    if direct.exists() {
+        return Some(direct);
+    }
+
+    // 2. bin/ subdirectory: root/bin/<binary_name>
+    let bin_sub = root.join("bin").join(binary_name);
+    if bin_sub.exists() {
+        return Some(bin_sub);
+    }
+
+    // 3. One level subdirectories (e.g. root/triM-1.2.0-linux-x86_64/trim)
+    if let Ok(entries) = fs::read_dir(root) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                let sub_direct = path.join(binary_name);
+                if sub_direct.exists() {
+                    return Some(sub_direct);
+                }
+                let usr_bin = path.join("usr").join("bin").join(binary_name);
+                if usr_bin.exists() {
+                    return Some(usr_bin);
+                }
+                let sub_bin = path.join("bin").join(binary_name);
+                if sub_bin.exists() {
+                    return Some(sub_bin);
+                }
+            }
+        }
+    }
+
+    // 4. Recursive search up to depth 4
+    find_binary_recursive(root, binary_name, 4)
+}
+
+fn find_binary_recursive(dir: &Path, binary_name: &str, depth: usize) -> Option<PathBuf> {
+    if depth == 0 {
+        return None;
+    }
+    let entries = fs::read_dir(dir).ok()?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            if let Some(found) = find_binary_recursive(&path, binary_name, depth - 1) {
+                return Some(found);
+            }
+        } else if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+            if name.eq_ignore_ascii_case(binary_name) {
+                return Some(path);
+            }
+        }
+    }
+    None
 }
 
 fn create_symlink(target: &Path, link: &Path) -> std::io::Result<()> {

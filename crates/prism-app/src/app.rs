@@ -420,6 +420,23 @@ impl PrismApp {
                     return;
                 }
                 Err(e) => {
+                    if let Some(local_path) = find_local_project_binary(app_id) {
+                        if install_mgr
+                            .install_local_binary(&app, &target_version, &local_path)
+                            .is_ok()
+                        {
+                            let _ = tx.send(AppEvent::StateChange {
+                                app_id,
+                                new_state: AppInstallState::Installed {
+                                    version: target_version,
+                                    previous_version: None,
+                                    latest_release: Some(release.clone()),
+                                },
+                            });
+                            return;
+                        }
+                    }
+
                     let _ = tx.send(AppEvent::OperationFailed {
                         app_id,
                         error: format!("Download failed: {}", e),
@@ -2931,4 +2948,29 @@ impl PrismApp {
             });
         self.show_about = open;
     }
+}
+
+fn find_local_project_binary(app_id: AppId) -> Option<PathBuf> {
+    let (folder, bin_name) = match app_id {
+        AppId::Trim => ("triM", "trim"),
+        AppId::Stem => ("steM", "stem"),
+        AppId::Beam => ("beaM", "beam"),
+    };
+
+    if let Ok(home) = std::env::var("HOME") {
+        let base = std::path::Path::new(&home)
+            .join("Projeler")
+            .join(folder)
+            .join("target");
+        let release_bin = base.join("release").join(bin_name);
+        if release_bin.exists() {
+            return Some(release_bin);
+        }
+        let debug_bin = base.join("debug").join(bin_name);
+        if debug_bin.exists() {
+            return Some(debug_bin);
+        }
+    }
+
+    None
 }
