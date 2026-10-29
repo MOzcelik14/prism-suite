@@ -13,4 +13,4 @@ pub use catalog::{AppCatalog, AppEntry, AppId};
 pub use config::LauncherConfig;
 pub use error::PrismError;
 pub use manifest::{AppReleaseManifest, ReleaseAsset, TargetArch, TargetOs};
-pub use state::AppInstallState;
+pub use state::{AppInstallState, ReleaseChannel, ReleaseInfo};

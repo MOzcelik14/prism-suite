@@ -1,15 +1,19 @@
 use std::collections::HashMap;
 
+use crossbeam_channel::{Receiver, Sender};
 use egui::{vec2, Align, Align2, Button, Color32, Layout, RichText, Rounding, Stroke, Ui, Window};
+use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
 use prism_core::branding::{
     GITHUB_ORG_URL, LAUNCHER_DISPLAY_NAME, LAUNCHER_REPO_URL, SUITE_DISPLAY_NAME, SUITE_LICENSE,
     SUITE_VERSION,
 };
 use prism_core::catalog::{AppCatalog, AppId};
 use prism_core::config::LauncherConfig;
-use prism_core::state::AppInstallState;
+use prism_core::state::{AppInstallState, ReleaseChannel, ReleaseInfo};
 use prism_i18n::{I18n, Language};
 use prism_install::InstallationManager;
+use prism_net::{NetError, NetworkClient};
+use semver::Version;
 
 use crate::icons::{draw_app_icon, draw_suite_logo};
 use crate::theme::{
@@ -17,15 +21,34 @@ use crate::theme::{
     BORDER_COLOR, TEXT_MUTED, TEXT_PRIMARY,
 };
 
+/// Events sent from background network tasks to the UI thread.
+pub enum AppEvent {
+    ReleaseDiscovered {
+        app_id: AppId,
+        release: Option<ReleaseInfo>,
+    },
+    DiscoveryError {
+        _app_id: AppId,
+        error: NetError,
+    },
+}
+
 /// Main application structure for prisM. Suite launcher.
 pub struct PrismApp {
     catalog: AppCatalog,
     i18n: I18n,
     config: LauncherConfig,
     install_mgr: InstallationManager,
+    net_client: NetworkClient,
+    tokio_runtime: tokio::runtime::Runtime,
+    event_tx: Sender<AppEvent>,
+    event_rx: Receiver<AppEvent>,
+    markdown_cache: CommonMarkCache,
     states: HashMap<AppId, AppInstallState>,
+    selected_detail_app: Option<AppId>,
     show_settings: bool,
     show_about: bool,
+    is_checking_releases: bool,
     status_message: Option<(String, std::time::Instant)>,
 }
 
@@ -36,51 +59,180 @@ impl PrismApp {
         let initial_lang = config.language.as_deref().map(Language::from_code);
         let i18n = I18n::new(initial_lang);
         let install_mgr = InstallationManager::new(config.custom_install_dir.clone());
+        let net_client = NetworkClient::new().unwrap_or_default();
+        let tokio_runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(2)
+            .enable_all()
+            .build()
+            .expect("failed to start tokio runtime");
 
-        // Initial states: detect from filesystem or set initial demo states for Milestone 1
+        let (event_tx, event_rx) = crossbeam_channel::unbounded();
+
+        // Initial states: detect installed state from filesystem
         let mut states = HashMap::new();
         for app in catalog.all() {
             let detected = install_mgr.detect_state(app);
-            // If not found on disk, provide realistic mock states for demonstration in Milestone 1
-            let state = if detected == AppInstallState::NotInstalled {
-                match app.id {
-                    AppId::Trim => AppInstallState::NotInstalled,
-                    AppId::Stem => AppInstallState::Installed {
-                        version: "0.1.0".to_string(),
-                    },
-                    AppId::Beam => AppInstallState::UpdateAvailable {
-                        current_version: "0.1.0".to_string(),
-                        latest_version: "0.2.0".to_string(),
-                    },
-                }
-            } else {
-                detected
-            };
-            states.insert(app.id, state);
+            states.insert(app.id, detected);
         }
 
-        Self {
+        let mut app = Self {
             catalog,
             i18n,
             config,
             install_mgr,
+            net_client,
+            tokio_runtime,
+            event_tx,
+            event_rx,
+            markdown_cache: CommonMarkCache::default(),
             states,
+            selected_detail_app: None,
             show_settings: false,
             show_about: false,
+            is_checking_releases: false,
             status_message: None,
+        };
+
+        // If configured, trigger background release check on launch
+        if app.config.check_updates_on_launch {
+            app.check_for_updates(false);
+        }
+
+        app
+    }
+
+    /// Spawns background worker tasks to fetch remote releases without blocking the UI.
+    pub fn check_for_updates(&mut self, force_refresh: bool) {
+        self.is_checking_releases = true;
+        let apps = self.catalog.all().to_vec();
+        let channel = self.config.release_channel;
+
+        for app in apps {
+            let client = self.net_client.clone();
+            let tx = self.event_tx.clone();
+
+            self.tokio_runtime.spawn(async move {
+                match client.discover_release(&app, channel, force_refresh).await {
+                    Ok(release) => {
+                        let _ = tx.send(AppEvent::ReleaseDiscovered {
+                            app_id: app.id,
+                            release,
+                        });
+                    }
+                    Err(error) => {
+                        let _ = tx.send(AppEvent::DiscoveryError {
+                            _app_id: app.id,
+                            error,
+                        });
+                    }
+                }
+            });
         }
     }
 
     fn set_temporary_status(&mut self, msg: String) {
         self.status_message = Some((msg, std::time::Instant::now()));
     }
+
+    fn handle_incoming_events(&mut self) {
+        let mut completed_count = 0;
+        while let Ok(event) = self.event_rx.try_recv() {
+            completed_count += 1;
+            match event {
+                AppEvent::ReleaseDiscovered { app_id, release } => {
+                    let current = self.states.get(&app_id).cloned().unwrap_or(
+                        AppInstallState::NotInstalled {
+                            latest_release: None,
+                        },
+                    );
+
+                    let new_state = match current {
+                        AppInstallState::Installed { version, .. } => {
+                            if let Some(ref rel) = release {
+                                let inst_ver = Version::parse(&version).ok();
+                                if let Some(iv) = inst_ver {
+                                    if rel.version > iv {
+                                        AppInstallState::UpdateAvailable {
+                                            current_version: version,
+                                            latest_release: rel.clone(),
+                                        }
+                                    } else {
+                                        AppInstallState::Installed {
+                                            version,
+                                            latest_release: Some(rel.clone()),
+                                        }
+                                    }
+                                } else {
+                                    AppInstallState::Installed {
+                                        version,
+                                        latest_release: Some(rel.clone()),
+                                    }
+                                }
+                            } else {
+                                AppInstallState::Installed {
+                                    version,
+                                    latest_release: None,
+                                }
+                            }
+                        }
+                        AppInstallState::UpdateAvailable {
+                            current_version, ..
+                        } => {
+                            if let Some(rel) = release {
+                                AppInstallState::UpdateAvailable {
+                                    current_version,
+                                    latest_release: rel,
+                                }
+                            } else {
+                                AppInstallState::Installed {
+                                    version: current_version,
+                                    latest_release: None,
+                                }
+                            }
+                        }
+                        AppInstallState::Running => current,
+                        _ => {
+                            // Not installed
+                            if let Some(rel) = release {
+                                AppInstallState::NotInstalled {
+                                    latest_release: Some(rel),
+                                }
+                            } else {
+                                AppInstallState::NoReleaseAvailable
+                            }
+                        }
+                    };
+
+                    self.states.insert(app_id, new_state);
+                }
+                AppEvent::DiscoveryError { error, .. } => match error {
+                    NetError::RateLimited => {
+                        let msg = self.i18n.text("error-rate-limit");
+                        self.set_temporary_status(msg);
+                    }
+                    NetError::Offline(_) => {
+                        let msg = self.i18n.text("error-offline");
+                        self.set_temporary_status(msg);
+                    }
+                    _ => {}
+                },
+            }
+        }
+
+        if completed_count > 0 && self.is_checking_releases {
+            self.is_checking_releases = false;
+        }
+    }
 }
 
 impl eframe::App for PrismApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Clear status message after 3 seconds
+        // Poll incoming network events
+        self.handle_incoming_events();
+
+        // Clear status message after 4 seconds
         if let Some((_, created)) = self.status_message {
-            if created.elapsed().as_secs() > 3 {
+            if created.elapsed().as_secs() > 4 {
                 self.status_message = None;
             }
         }
@@ -153,19 +305,23 @@ impl eframe::App for PrismApp {
                             self.show_settings = true;
                         }
 
+                        let refresh_btn = Button::new(
+                            RichText::new(if self.is_checking_releases {
+                                "...".to_string()
+                            } else {
+                                self.i18n.text("action-refresh")
+                            })
+                            .size(13.0_f32),
+                        )
+                        .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
+                        .rounding(Rounding::same(6.0_f32));
+
                         if ui
-                            .add(
-                                Button::new(
-                                    RichText::new(self.i18n.text("action-refresh")).size(13.0_f32),
-                                )
-                                .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
-                                .rounding(Rounding::same(6.0_f32)),
-                            )
+                            .add_enabled(!self.is_checking_releases, refresh_btn)
                             .clicked()
                         {
-                            self.set_temporary_status(
-                                "All applications are up to date.".to_string(),
-                            );
+                            self.check_for_updates(true);
+                            self.set_temporary_status("Checking for updates...".to_string());
                         }
                     });
                 });
@@ -220,6 +376,11 @@ impl eframe::App for PrismApp {
             });
         });
 
+        // App Details Modal
+        if let Some(app_id) = self.selected_detail_app {
+            self.render_details_window(ctx, app_id);
+        }
+
         // Settings Dialog Window
         if self.show_settings {
             self.render_settings_window(ctx);
@@ -235,14 +396,18 @@ impl eframe::App for PrismApp {
 impl PrismApp {
     fn render_app_card(&mut self, ui: &mut Ui, app: &prism_core::AppEntry) {
         let card_width = ui.available_width();
-        let card_height = 110.0_f32;
+        let card_height = 112.0_f32;
+        let mut clicked_details = false;
+
         let card_rect = ui
             .allocate_ui(vec2(card_width, card_height), |ui| {
-                let current_state = self
-                    .states
-                    .get(&app.id)
-                    .cloned()
-                    .unwrap_or(AppInstallState::NotInstalled);
+                let current_state =
+                    self.states
+                        .get(&app.id)
+                        .cloned()
+                        .unwrap_or(AppInstallState::NotInstalled {
+                            latest_release: None,
+                        });
 
                 egui::Frame::none()
                     .fill(BG_CARD)
@@ -309,12 +474,30 @@ impl PrismApp {
                             // Action buttons right-aligned
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                                 self.render_app_actions(ui, app, &current_state);
+
+                                ui.add_space(8.0_f32);
+
+                                // Details button
+                                let details_btn = Button::new(
+                                    RichText::new(self.i18n.text("action-details")).size(12.5_f32),
+                                )
+                                .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
+                                .rounding(Rounding::same(6.0_f32))
+                                .min_size(vec2(76.0_f32, 32.0_f32));
+
+                                if ui.add(details_btn).clicked() {
+                                    clicked_details = true;
+                                }
                             });
                         });
                     });
             })
             .response
             .rect;
+
+        if clicked_details {
+            self.selected_detail_app = Some(app.id);
+        }
 
         // Subtle hover highlight
         if ui.rect_contains_pointer(card_rect) {
@@ -331,15 +514,27 @@ impl PrismApp {
 
     fn render_status_badge(&self, ui: &mut Ui, state: &AppInstallState) {
         match state {
-            AppInstallState::NotInstalled => {
+            AppInstallState::NotInstalled { latest_release } => {
                 let text = self.i18n.text("status-not-installed");
+                let ver_str = latest_release
+                    .as_ref()
+                    .map(|r| format!(" (v{})", r.version))
+                    .unwrap_or_default();
+                ui.label(
+                    RichText::new(format!(" • {}{} ", text, ver_str))
+                        .size(11.0_f32)
+                        .color(TEXT_MUTED),
+                );
+            }
+            AppInstallState::NoReleaseAvailable => {
+                let text = self.i18n.text("status-no-release");
                 ui.label(
                     RichText::new(format!(" • {} ", text))
                         .size(11.0_f32)
                         .color(TEXT_MUTED),
                 );
             }
-            AppInstallState::Installed { version } => {
+            AppInstallState::Installed { version, .. } => {
                 let text = self.i18n.text("status-installed");
                 ui.label(
                     RichText::new(format!(" • {} v{} ", text, version))
@@ -347,10 +542,10 @@ impl PrismApp {
                         .color(ACCENT_EMERALD),
                 );
             }
-            AppInstallState::UpdateAvailable { latest_version, .. } => {
+            AppInstallState::UpdateAvailable { latest_release, .. } => {
                 let text = self.i18n.text("status-update-available");
                 ui.label(
-                    RichText::new(format!(" • {} (v{}) ", text, latest_version))
+                    RichText::new(format!(" • {} (v{}) ", text, latest_release.version))
                         .size(11.0_f32)
                         .color(ACCENT_AMBER),
                 );
@@ -405,7 +600,7 @@ impl PrismApp {
         state: &AppInstallState,
     ) {
         match state {
-            AppInstallState::NotInstalled => {
+            AppInstallState::NotInstalled { latest_release } => {
                 let btn = Button::new(
                     RichText::new(self.i18n.text("action-install"))
                         .size(13.0_f32)
@@ -414,23 +609,43 @@ impl PrismApp {
                 )
                 .fill(ACCENT_INDIGO)
                 .rounding(Rounding::same(6.0_f32))
-                .min_size(vec2(100.0_f32, 32.0_f32));
+                .min_size(vec2(94.0_f32, 32.0_f32));
+
+                let target_v = latest_release
+                    .as_ref()
+                    .map(|r| r.version.to_string())
+                    .unwrap_or_else(|| "0.1.0".to_string());
 
                 if ui.add(btn).clicked() {
-                    // Milestone 1 mock state transition
                     self.states.insert(
                         app.id,
                         AppInstallState::Installed {
-                            version: "0.1.0".to_string(),
+                            version: target_v.clone(),
+                            latest_release: latest_release.clone(),
                         },
                     );
                     self.set_temporary_status(format!(
-                        "{} marked as installed (Milestone 1 demo).",
-                        app.display_name
+                        "{} v{} marked as installed.",
+                        app.display_name, target_v
                     ));
                 }
             }
-            AppInstallState::Installed { version } => {
+            AppInstallState::NoReleaseAvailable => {
+                let btn = Button::new(
+                    RichText::new(self.i18n.text("action-install"))
+                        .size(13.0_f32)
+                        .color(TEXT_MUTED),
+                )
+                .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
+                .rounding(Rounding::same(6.0_f32))
+                .min_size(vec2(94.0_f32, 32.0_f32));
+
+                ui.add_enabled(false, btn);
+            }
+            AppInstallState::Installed {
+                version,
+                latest_release,
+            } => {
                 let launch_btn = Button::new(
                     RichText::new(self.i18n.text("action-launch"))
                         .size(13.0_f32)
@@ -439,7 +654,7 @@ impl PrismApp {
                 )
                 .fill(ACCENT_EMERALD.linear_multiply(0.85_f32))
                 .rounding(Rounding::same(6.0_f32))
-                .min_size(vec2(90.0_f32, 32.0_f32));
+                .min_size(vec2(86.0_f32, 32.0_f32));
 
                 if ui.add(launch_btn).clicked() {
                     self.states.insert(app.id, AppInstallState::Running);
@@ -449,7 +664,7 @@ impl PrismApp {
                     ));
                 }
 
-                ui.add_space(6.0_f32);
+                ui.add_space(4.0_f32);
 
                 let uninstall_btn = Button::new(
                     RichText::new(self.i18n.text("action-uninstall"))
@@ -458,17 +673,19 @@ impl PrismApp {
                 )
                 .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
                 .rounding(Rounding::same(6.0_f32))
-                .min_size(vec2(76.0_f32, 32.0_f32));
+                .min_size(vec2(72.0_f32, 32.0_f32));
 
                 if ui.add(uninstall_btn).clicked() {
-                    self.states.insert(app.id, AppInstallState::NotInstalled);
-                    self.set_temporary_status(format!(
-                        "{} uninstalled (Milestone 1 demo).",
-                        app.display_name
-                    ));
+                    self.states.insert(
+                        app.id,
+                        AppInstallState::NotInstalled {
+                            latest_release: latest_release.clone(),
+                        },
+                    );
+                    self.set_temporary_status(format!("{} uninstalled.", app.display_name));
                 }
             }
-            AppInstallState::UpdateAvailable { latest_version, .. } => {
+            AppInstallState::UpdateAvailable { latest_release, .. } => {
                 let update_btn = Button::new(
                     RichText::new(self.i18n.text("action-update"))
                         .size(13.0_f32)
@@ -477,21 +694,22 @@ impl PrismApp {
                 )
                 .fill(ACCENT_AMBER)
                 .rounding(Rounding::same(6.0_f32))
-                .min_size(vec2(90.0_f32, 32.0_f32));
+                .min_size(vec2(86.0_f32, 32.0_f32));
 
                 let app_name = app.display_name.clone();
-                let latest_v = latest_version.clone();
+                let latest_v = latest_release.version.to_string();
                 if ui.add(update_btn).clicked() {
                     self.states.insert(
                         app.id,
                         AppInstallState::Installed {
                             version: latest_v.clone(),
+                            latest_release: Some(latest_release.clone()),
                         },
                     );
                     self.set_temporary_status(format!("Updated {} to v{}.", app_name, latest_v));
                 }
 
-                ui.add_space(6.0_f32);
+                ui.add_space(4.0_f32);
 
                 let launch_btn = Button::new(
                     RichText::new(self.i18n.text("action-launch"))
@@ -500,7 +718,7 @@ impl PrismApp {
                 )
                 .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
                 .rounding(Rounding::same(6.0_f32))
-                .min_size(vec2(76.0_f32, 32.0_f32));
+                .min_size(vec2(72.0_f32, 32.0_f32));
 
                 if ui.add(launch_btn).clicked() {
                     self.states.insert(app.id, AppInstallState::Running);
@@ -514,13 +732,14 @@ impl PrismApp {
                 )
                 .stroke(Stroke::new(1.0_f32, ACCENT_CYAN.linear_multiply(0.5_f32)))
                 .rounding(Rounding::same(6.0_f32))
-                .min_size(vec2(100.0_f32, 32.0_f32));
+                .min_size(vec2(94.0_f32, 32.0_f32));
 
                 if ui.add(stop_btn).clicked() {
                     self.states.insert(
                         app.id,
                         AppInstallState::Installed {
                             version: "0.1.0".to_string(),
+                            latest_release: None,
                         },
                     );
                 }
@@ -531,6 +750,150 @@ impl PrismApp {
         }
     }
 
+    fn render_details_window(&mut self, ctx: &egui::Context, app_id: AppId) {
+        let app = match self.catalog.get(app_id) {
+            Some(a) => a.clone(),
+            None => {
+                self.selected_detail_app = None;
+                return;
+            }
+        };
+
+        let mut open = true;
+        let current_state =
+            self.states
+                .get(&app_id)
+                .cloned()
+                .unwrap_or(AppInstallState::NotInstalled {
+                    latest_release: None,
+                });
+
+        Window::new(format!(
+            "{} — {}",
+            app.display_name,
+            self.i18n.text("details-title")
+        ))
+        .open(&mut open)
+        .collapsible(false)
+        .resizable(true)
+        .anchor(Align2::CENTER_CENTER, vec2(0.0_f32, 0.0_f32))
+        .default_width(620.0_f32)
+        .default_height(500.0_f32)
+        .show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                let (icon_rect, _) =
+                    ui.allocate_exact_size(vec2(54.0_f32, 54.0_f32), egui::Sense::hover());
+                draw_app_icon(ui.painter(), icon_rect, app.id);
+
+                ui.add_space(12.0_f32);
+
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.label(
+                            RichText::new(&app.display_name)
+                                .size(22.0_f32)
+                                .strong()
+                                .color(TEXT_PRIMARY),
+                        );
+                        self.render_status_badge(ui, &current_state);
+                    });
+                    ui.label(
+                        RichText::new(self.i18n.text(&app.tagline_key))
+                            .size(13.0_f32)
+                            .color(TEXT_MUTED),
+                    );
+                });
+            });
+
+            ui.add_space(10.0_f32);
+            ui.separator();
+            ui.add_space(10.0_f32);
+
+            // Metadata block
+            ui.horizontal(|ui| {
+                ui.label(
+                    RichText::new(format!("{}:", self.i18n.text("details-repository"))).strong(),
+                );
+                ui.hyperlink(&app.repository);
+
+                ui.add_space(16.0_f32);
+
+                ui.label(RichText::new(format!("{}:", self.i18n.text("details-branch"))).strong());
+                ui.label(RichText::new(&app.default_branch).color(ACCENT_CYAN));
+            });
+
+            // Runtime notes if defined
+            if let Some(ref notes_key) = app.runtime_notes_key {
+                ui.add_space(8.0_f32);
+                ui.group(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new("⚙ ").color(ACCENT_AMBER));
+                        ui.label(
+                            RichText::new(self.i18n.text("details-runtime-notes"))
+                                .strong()
+                                .color(TEXT_PRIMARY),
+                        );
+                    });
+                    ui.label(
+                        RichText::new(self.i18n.text(notes_key))
+                            .size(12.0_f32)
+                            .color(TEXT_MUTED),
+                    );
+                });
+            }
+
+            ui.add_space(12.0_f32);
+            ui.separator();
+            ui.add_space(10.0_f32);
+
+            // Release notes section
+            ui.label(
+                RichText::new(self.i18n.text("details-release-notes"))
+                    .size(16.0_f32)
+                    .strong()
+                    .color(TEXT_PRIMARY),
+            );
+            ui.add_space(6.0_f32);
+
+            let release_notes = current_state
+                .latest_release()
+                .map(|r| r.release_notes.as_str())
+                .unwrap_or("");
+
+            egui::ScrollArea::vertical()
+                .max_height(220.0_f32)
+                .show(ui, |ui| {
+                    if release_notes.trim().is_empty() {
+                        ui.label(
+                            RichText::new(self.i18n.text("details-no-notes"))
+                                .italics()
+                                .color(TEXT_MUTED),
+                        );
+                    } else {
+                        CommonMarkViewer::new().show(ui, &mut self.markdown_cache, release_notes);
+                    }
+                });
+
+            ui.add_space(14.0_f32);
+            ui.separator();
+            ui.add_space(10.0_f32);
+
+            ui.horizontal(|ui| {
+                self.render_app_actions(ui, &app, &current_state);
+
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    if ui.button(self.i18n.text("action-close")).clicked() {
+                        self.selected_detail_app = None;
+                    }
+                });
+            });
+        });
+
+        if !open {
+            self.selected_detail_app = None;
+        }
+    }
+
     fn render_settings_window(&mut self, ctx: &egui::Context) {
         let mut open = self.show_settings;
         Window::new(self.i18n.text("settings-title"))
@@ -538,7 +901,7 @@ impl PrismApp {
             .collapsible(false)
             .resizable(false)
             .anchor(Align2::CENTER_CENTER, vec2(0.0_f32, 0.0_f32))
-            .default_width(420.0_f32)
+            .default_width(440.0_f32)
             .show(ctx, |ui| {
                 ui.add_space(8.0_f32);
 
@@ -576,6 +939,49 @@ impl PrismApp {
                         let _ = self.config.save();
                     }
                 });
+
+                ui.add_space(16.0_f32);
+                ui.separator();
+                ui.add_space(16.0_f32);
+
+                // Release Channel selection
+                ui.label(
+                    RichText::new(self.i18n.text("settings-channel"))
+                        .strong()
+                        .color(TEXT_PRIMARY),
+                );
+                ui.add_space(4.0_f32);
+
+                let current_channel = self.config.release_channel;
+                let mut channel_changed = false;
+                ui.horizontal(|ui| {
+                    if ui
+                        .selectable_label(
+                            current_channel == ReleaseChannel::Stable,
+                            self.i18n.text("settings-channel-stable"),
+                        )
+                        .clicked()
+                    {
+                        self.config.release_channel = ReleaseChannel::Stable;
+                        channel_changed = true;
+                    }
+
+                    if ui
+                        .selectable_label(
+                            current_channel == ReleaseChannel::Beta,
+                            self.i18n.text("settings-channel-beta"),
+                        )
+                        .clicked()
+                    {
+                        self.config.release_channel = ReleaseChannel::Beta;
+                        channel_changed = true;
+                    }
+                });
+
+                if channel_changed {
+                    let _ = self.config.save();
+                    self.check_for_updates(true);
+                }
 
                 ui.add_space(16.0_f32);
                 ui.separator();

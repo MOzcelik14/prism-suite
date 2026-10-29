@@ -34,6 +34,7 @@ pub struct AppEntry {
     pub category: String,
     pub tagline_key: String,
     pub description_key: String,
+    pub runtime_notes_key: Option<String>,
     pub repository: String,
     pub default_branch: String,
     pub primary_binary_name: String,

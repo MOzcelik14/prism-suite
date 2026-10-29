@@ -1,3 +1,4 @@
+use crate::state::ReleaseChannel;
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -8,6 +9,8 @@ use std::path::PathBuf;
 pub struct LauncherConfig {
     /// Preferred UI language (e.g. "en", "tr"). If None, detects from system.
     pub language: Option<String>,
+    /// Selected update release channel.
+    pub release_channel: ReleaseChannel,
     /// Custom root installation directory for apps. Defaults to system app data directory.
     pub custom_install_dir: Option<PathBuf>,
     /// Automatically check for updates on startup.
@@ -18,6 +21,7 @@ impl Default for LauncherConfig {
     fn default() -> Self {
         Self {
             language: None,
+            release_channel: ReleaseChannel::default(),
             custom_install_dir: None,
             check_updates_on_launch: true,
         }

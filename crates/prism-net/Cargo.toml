@@ -15,3 +15,7 @@ ed25519-dalek.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 log.workspace = true
+semver.workspace = true
+ron.workspace = true
+directories.workspace = true
+chrono.workspace = true

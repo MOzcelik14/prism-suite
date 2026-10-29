@@ -1,7 +1,16 @@
+pub mod cache;
+pub mod github;
+
 use ed25519_dalek::VerifyingKey;
+use prism_core::catalog::{AppEntry, AppId};
 use prism_core::error::PrismError;
+use prism_core::manifest::{TargetArch, TargetOs};
+use prism_core::state::{ReleaseChannel, ReleaseInfo};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
+
+pub use cache::ReleaseCache;
+pub use github::{find_newest_compatible_release, parse_version, GitHubAsset, GitHubRelease};
 
 /// Compile-time configurable Ed25519 public key for release signature verification.
 /// In production, set `PRISM_PUBLIC_KEY=<hex-or-base64>` at build time.
@@ -12,6 +21,12 @@ pub const DEFAULT_ED25519_PUBLIC_KEY_HEX: &str = match option_env!("PRISM_PUBLIC
 
 #[derive(Debug, Error)]
 pub enum NetError {
+    #[error("GitHub API rate limit exceeded. Please try again later.")]
+    RateLimited,
+
+    #[error("Network connection offline or unreachable: {0}")]
+    Offline(String),
+
     #[error("HTTP request error: {0}")]
     Http(#[from] reqwest::Error),
 
@@ -28,6 +43,10 @@ pub enum NetError {
 impl From<NetError> for PrismError {
     fn from(err: NetError) -> Self {
         match err {
+            NetError::RateLimited => {
+                PrismError::Network("GitHub API rate limit exceeded".to_string())
+            }
+            NetError::Offline(msg) => PrismError::Network(format!("Offline: {}", msg)),
             NetError::Http(e) => PrismError::Network(e.to_string()),
             NetError::ChecksumMismatch { .. } | NetError::SignatureInvalid(_) => {
                 PrismError::Security(err.to_string())
@@ -55,6 +74,7 @@ pub fn parse_hex(hex_str: &str) -> Result<Vec<u8>, NetError> {
 }
 
 /// Network client for fetching releases and update manifests.
+#[derive(Clone)]
 pub struct NetworkClient {
     client: reqwest::Client,
 }
@@ -73,6 +93,82 @@ impl NetworkClient {
 
     pub fn client(&self) -> &reqwest::Client {
         &self.client
+    }
+
+    /// Fetches all GitHub releases for a given repository with caching.
+    pub async fn fetch_releases(
+        &self,
+        app_id: AppId,
+        repository_url: &str,
+        force_refresh: bool,
+    ) -> Result<Vec<GitHubRelease>, NetError> {
+        // Check cache first (15-minute default TTL = 900 seconds)
+        if !force_refresh {
+            if let Some(cached) = ReleaseCache::get(app_id, 900) {
+                return Ok(cached);
+            }
+        }
+
+        let (owner, repo) = extract_owner_and_repo(repository_url).ok_or_else(|| {
+            NetError::Offline(format!("Invalid repository URL: {}", repository_url))
+        })?;
+
+        let api_url = format!("https://api.github.com/repos/{}/{}/releases", owner, repo);
+
+        let response = match self
+            .client
+            .get(&api_url)
+            .header("Accept", "application/vnd.github.v3+json")
+            .send()
+            .await
+        {
+            Ok(resp) => resp,
+            Err(e) => {
+                // If offline or network error, fallback to existing cache regardless of TTL
+                if let Some(cached) = ReleaseCache::get(app_id, i64::MAX) {
+                    return Ok(cached);
+                }
+                return Err(NetError::Offline(e.to_string()));
+            }
+        };
+
+        let status = response.status();
+        if status == reqwest::StatusCode::FORBIDDEN
+            || status == reqwest::StatusCode::TOO_MANY_REQUESTS
+        {
+            // Check for rate limit
+            if let Some(cached) = ReleaseCache::get(app_id, i64::MAX) {
+                return Ok(cached);
+            }
+            return Err(NetError::RateLimited);
+        }
+
+        if status == reqwest::StatusCode::NOT_FOUND {
+            // Repository exists but has no releases or repo is 404
+            return Ok(Vec::new());
+        }
+
+        let releases: Vec<GitHubRelease> = response.error_for_status()?.json().await?;
+        let _ = ReleaseCache::set(app_id, releases.clone());
+
+        Ok(releases)
+    }
+
+    /// Discovers the newest compatible release for an app given current OS and CPU arch.
+    pub async fn discover_release(
+        &self,
+        app: &AppEntry,
+        channel: ReleaseChannel,
+        force_refresh: bool,
+    ) -> Result<Option<ReleaseInfo>, NetError> {
+        let releases = self
+            .fetch_releases(app.id, &app.repository, force_refresh)
+            .await?;
+        let os = TargetOs::current();
+        let arch = TargetArch::current();
+        Ok(find_newest_compatible_release(
+            &releases, app.id, os, arch, channel,
+        ))
     }
 
     /// Verifies that data matches an expected SHA-256 hash (hex string).
@@ -107,9 +203,33 @@ impl Default for NetworkClient {
     }
 }
 
+/// Parses "https://github.com/owner/repo" into ("owner", "repo").
+fn extract_owner_and_repo(url: &str) -> Option<(&str, &str)> {
+    let stripped = url
+        .trim_end_matches('/')
+        .strip_prefix("https://github.com/")?;
+    let mut parts = stripped.split('/');
+    let owner = parts.next()?;
+    let repo = parts.next()?;
+    Some((owner, repo))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_extract_owner_and_repo() {
+        assert_eq!(
+            extract_owner_and_repo("https://github.com/MOzcelik14/triM"),
+            Some(("MOzcelik14", "triM"))
+        );
+        assert_eq!(
+            extract_owner_and_repo("https://github.com/MOzcelik14/steM/"),
+            Some(("MOzcelik14", "steM"))
+        );
+        assert_eq!(extract_owner_and_repo("invalid-url"), None);
+    }
 
     #[test]
     fn test_sha256_verification() {

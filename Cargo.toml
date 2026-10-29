@@ -37,7 +37,7 @@ directories = "5.0"
 fluent-bundle = "0.15"
 unic-langid = { version = "0.9", features = ["macros"] }
 sys-locale = "0.3"
-egui_commonmark = "0.17"
+egui_commonmark = "0.18"
 thiserror = "1.0"
 crossbeam-channel = "0.5"
 log = "0.4"

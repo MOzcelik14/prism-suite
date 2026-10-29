@@ -77,12 +77,19 @@ impl InstallationManager {
                         .map(|s| s.trim().to_string())
                         .unwrap_or_else(|| "0.1.0".to_string());
 
-                    AppInstallState::Installed { version }
+                    AppInstallState::Installed {
+                        version,
+                        latest_release: None,
+                    }
                 } else {
-                    AppInstallState::NotInstalled
+                    AppInstallState::NotInstalled {
+                        latest_release: None,
+                    }
                 }
             }
-            Err(_) => AppInstallState::NotInstalled,
+            Err(_) => AppInstallState::NotInstalled {
+                latest_release: None,
+            },
         }
     }
 }
