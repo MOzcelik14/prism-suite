@@ -4,19 +4,19 @@ nav-apps = Uygulamalar
 nav-whats-new = Yenilikler
 
 # App Catalog: triM.
-app-trim-tagline = Masaüstü için hassas doğrusal olmayan video düzenleme
-app-trim-description = Yüksek performanslı zaman çizelgesi, çok kanallı kesme, renk düzeltme ve dışa aktarma iş akışı.
-app-trim-runtime-notes = OpenGL 3.3+ destekli grafik kartı ve 4GB+ RAM önerilir.
+app-trim-tagline = Hafif, modern ve doğrusal olmayan video düzenleyici
+app-trim-description = Rust ve egui ile geliştirilmiş, sistem FFmpeg destekli yüksek performanslı zaman çizelgesi, renk derecelendirme ve dışa aktarma iş akışı.
+app-trim-runtime-notes = Linux & Windows. Sistem FFmpeg ve OpenGL 3.3+ destekli grafik kartı önerilir.
 
 # App Catalog: steM.
-app-stem-tagline = Çok kanallı ses çalışma istasyonu ve hassas dalga formu düzenleyici
-app-stem-description = Gelişmiş ses düzenleme, spektral araçlar, çok kanallı miksaj ve gerçek zamanlı işleme.
-app-stem-runtime-notes = Linux üzerinde düşük gecikmeli ALSA/PulseAudio/JACK, Windows üzerinde WASAPI.
+app-stem-tagline = Tahribatsız ve gerçek zamanlı çok kanallı ses çalışma istasyonu
+app-stem-description = Rust ile geliştirilmiş yüksek performanslı ses iş istasyonu. Kilit ve tahsis içermeyen ses iş parçacığı, spektral araçlar, miksaj ve hassas dalga formu düzenleyici.
+app-stem-runtime-notes = Düşük gecikmeli ALSA/PipeWire/JACK (Linux) veya WASAPI (Windows).
 
 # App Catalog: beaM.
-app-beam-tagline = Yaratıcı fotoğraf düzenleme ve raster tasarım stüdyosu
-app-beam-description = Profesyonel ham fotoğraf geliştirme, katman tabanlı kompozitleme ve görsel tonlama.
-app-beam-runtime-notes = 64-bit çok çekirdekli işlemci ve renk kalibrasyonlu ekran önerilir.
+app-beam-tagline = Tahribatsız RAW fotoğraf düzenleyici ve kütüphane yöneticisi
+app-beam-description = wgpu ve egui ile geliştirilmiş modern, saf Rust Adobe Lightroom alternatifi. Lineer Rec.2020 renk uzayında GPU hızlandırmalı gölgelendirici geçişleri.
+app-beam-runtime-notes = 64-bit çok çekirdekli işlemci ve Vulkan/DirectX 12/Metal uyumlu modern grafik işlemci önerilir.
 
 # Actions
 action-launch = Başlat
@@ -41,7 +41,8 @@ action-view-notes = Notları Gör
 
 # Status Badges
 status-not-installed = Yüklü Değil
-status-no-release = Henüz yayınlanan sürüm yok
+status-no-release = Geliştirme Aşamasında
+action-source-repo = GitHub Deposu
 status-installed = Yüklü
 status-update-available = Güncelleme Mevcut
 status-downloading = İndiriliyor...

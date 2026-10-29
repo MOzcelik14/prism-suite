@@ -52,8 +52,12 @@ pub fn find_newest_compatible_release_for_name(
     arch: TargetArch,
     channel: ReleaseChannel,
 ) -> Option<ReleaseInfo> {
-    let app_prefix = format!("{}-", app_name);
-    let target_suffix = format!("-{}-{}.", os.as_str(), arch.as_str());
+    let app_prefix_lower = format!("{}-", app_name.to_lowercase());
+    let target_suffix_lower = format!(
+        "-{}-{}.",
+        os.as_str().to_lowercase(),
+        arch.as_str().to_lowercase()
+    );
     let expected_ext = match os {
         TargetOs::Linux => ".tar.gz",
         TargetOs::Windows => ".zip",
@@ -71,31 +75,45 @@ pub fn find_newest_compatible_release_for_name(
             continue;
         }
 
-        // Search for matching target package asset
+        // Search for matching target package asset (case-insensitive for app prefix)
         let target_asset = release.assets.iter().find(|asset| {
-            asset.name.starts_with(&app_prefix)
-                && asset.name.contains(&target_suffix)
-                && asset.name.ends_with(expected_ext)
+            let name_lower = asset.name.to_lowercase();
+            let matches_prefix = name_lower.starts_with(&app_prefix_lower);
+            let matches_suffix = name_lower.contains(&target_suffix_lower);
+            let matches_ext = name_lower.ends_with(expected_ext)
+                || (os == TargetOs::Linux
+                    && (name_lower.ends_with(".tar.gz") || name_lower.ends_with(".tgz")));
+            matches_prefix && matches_suffix && matches_ext
         });
 
         if let Some(asset) = target_asset {
             // Extract version from filename or tag
-            // Filename format: <app_id>-<version>-<os>-<arch>.<ext>
-            let version = extract_version_from_filename(&asset.name, app_name, &target_suffix)
-                .or_else(|| parse_version(&release.tag_name));
+            let version =
+                extract_version_from_filename(&asset.name, app_name, &target_suffix_lower)
+                    .or_else(|| parse_version(&release.tag_name));
 
             if let Some(ver) = version {
-                // Find optional checksums and signature files in the same release
+                // Find optional checksums and signature files in the same release (e.g. SHA256SUMS or SHA256SUMS.txt)
                 let checksums_url = release
                     .assets
                     .iter()
-                    .find(|a| a.name == "SHA256SUMS")
+                    .find(|a| {
+                        let lower = a.name.to_lowercase();
+                        lower == "sha256sums"
+                            || lower == "sha256sums.txt"
+                            || lower.starts_with("sha256sums")
+                    })
                     .map(|a| a.browser_download_url.clone());
 
                 let signature_url = release
                     .assets
                     .iter()
-                    .find(|a| a.name == "SHA256SUMS.sig")
+                    .find(|a| {
+                        let lower = a.name.to_lowercase();
+                        lower == "sha256sums.sig"
+                            || lower.ends_with(".sig")
+                            || lower.ends_with(".minisig")
+                    })
                     .map(|a| a.browser_download_url.clone());
 
                 let release_info = ReleaseInfo {
@@ -127,11 +145,23 @@ pub fn find_newest_compatible_release_for_name(
 fn extract_version_from_filename(
     filename: &str,
     app_name: &str,
-    target_suffix: &str,
+    target_suffix_lower: &str,
 ) -> Option<Version> {
-    let without_prefix = filename.strip_prefix(&format!("{}-", app_name))?;
-    let (ver_str, _) = without_prefix.split_once(target_suffix)?;
-    parse_version(ver_str)
+    let lower_file = filename.to_lowercase();
+    let lower_prefix = format!("{}-", app_name.to_lowercase());
+
+    if lower_file.starts_with(&lower_prefix) {
+        let after_prefix = &filename[lower_prefix.len()..];
+        let lower_after = &lower_file[lower_prefix.len()..];
+
+        if let Some(pos) = lower_after.find(target_suffix_lower) {
+            let ver_str = &after_prefix[..pos];
+            if let Some(v) = parse_version(ver_str) {
+                return Some(v);
+            }
+        }
+    }
+    None
 }
 
 #[cfg(test)]
@@ -259,5 +289,58 @@ mod tests {
             launcher_release.asset_filename,
             "prism-0.2.0-linux-x86_64.tar.gz"
         );
+    }
+
+    #[test]
+    fn test_trim_case_and_txt_checksums() {
+        let releases = vec![GitHubRelease {
+            tag_name: "v1.2.0".to_string(),
+            name: Some("v1.2.0".to_string()),
+            body: Some("Release 1.2.0".to_string()),
+            draft: false,
+            prerelease: false,
+            published_at: Some("2026-10-26T12:00:00Z".to_string()),
+            assets: vec![
+                GitHubAsset {
+                    name: "triM-1.2.0-linux-x86_64.tar.gz".to_string(),
+                    size: 5670000,
+                    browser_download_url: "https://github.com/MOzcelik14/triM/releases/download/v1.2.0/triM-1.2.0-linux-x86_64.tar.gz".to_string(),
+                },
+                GitHubAsset {
+                    name: "triM-1.2.0-windows-x86_64.zip".to_string(),
+                    size: 3970000,
+                    browser_download_url: "https://github.com/MOzcelik14/triM/releases/download/v1.2.0/triM-1.2.0-windows-x86_64.zip".to_string(),
+                },
+                GitHubAsset {
+                    name: "SHA256SUMS.txt".to_string(),
+                    size: 463,
+                    browser_download_url: "https://github.com/MOzcelik14/triM/releases/download/v1.2.0/SHA256SUMS.txt".to_string(),
+                },
+            ],
+        }];
+
+        let linux_rel = find_newest_compatible_release(
+            &releases,
+            AppId::Trim,
+            TargetOs::Linux,
+            TargetArch::X86_64,
+            ReleaseChannel::Stable,
+        )
+        .expect("should find triM on Linux");
+        assert_eq!(linux_rel.version, Version::parse("1.2.0").unwrap());
+        assert_eq!(linux_rel.asset_filename, "triM-1.2.0-linux-x86_64.tar.gz");
+        assert!(linux_rel.checksums_url.is_some());
+
+        let win_rel = find_newest_compatible_release(
+            &releases,
+            AppId::Trim,
+            TargetOs::Windows,
+            TargetArch::X86_64,
+            ReleaseChannel::Stable,
+        )
+        .expect("should find triM on Windows");
+        assert_eq!(win_rel.version, Version::parse("1.2.0").unwrap());
+        assert_eq!(win_rel.asset_filename, "triM-1.2.0-windows-x86_64.zip");
+        assert!(win_rel.checksums_url.is_some());
     }
 }

@@ -4,19 +4,19 @@ nav-apps = Applications
 nav-whats-new = What's New
 
 # App Catalog: triM.
-app-trim-tagline = Precision non-linear video editing for desktop
-app-trim-description = High-performance timeline, multi-track cutting, color correction, and export workflow.
-app-trim-runtime-notes = Requires GPU with OpenGL 3.3+ support and 4GB+ RAM recommended.
+app-trim-tagline = A lightweight, modern non-linear video editor
+app-trim-description = Built in Rust with egui and system FFmpeg. Features high-performance multi-track timeline, color grading, and native exports.
+app-trim-runtime-notes = Linux & Windows. Requires system FFmpeg and OpenGL 3.3+ GPU.
 
 # App Catalog: steM.
-app-stem-tagline = Multitrack audio workstation & precision waveform editor
-app-stem-description = Advanced audio editing, spectral tools, multi-track mixing, and real-time processing.
-app-stem-runtime-notes = Low-latency ALSA/PulseAudio/JACK on Linux, WASAPI on Windows.
+app-stem-tagline = Non-destructive, real-time multi-track audio workstation
+app-stem-description = High-performance audio workstation written in Rust. Zero-allocation real-time audio thread, spectral tools, multi-track mixing, and sample-accurate waveform editor.
+app-stem-runtime-notes = Low-latency ALSA/PipeWire/JACK on Linux, WASAPI on Windows.
 
 # App Catalog: beaM.
-app-beam-tagline = Creative photo editing & raster design studio
-app-beam-description = Professional raw photo development, layer-based compositing, and visual grading.
-app-beam-runtime-notes = 64-bit multi-core processor and color-calibrated display recommended.
+app-beam-tagline = Non-destructive RAW photo editor and library manager
+app-beam-description = Modern, pure-Rust alternative to Adobe Lightroom built with wgpu and egui. Linear Rec.2020 working space with GPU-accelerated shader passes.
+app-beam-runtime-notes = 64-bit multi-core CPU and modern GPU with Vulkan/DirectX 12/Metal support.
 
 # Actions
 action-launch = Launch
@@ -41,7 +41,8 @@ action-view-notes = View Notes
 
 # Status Badges
 status-not-installed = Not Installed
-status-no-release = No release available yet
+status-no-release = In Development
+action-source-repo = GitHub Repository
 status-installed = Installed
 status-update-available = Update Available
 status-downloading = Downloading...

@@ -1,9 +1,13 @@
 // Copyright (C) 2026 Murat Özçelik <mozcelik14>
 // SPDX-License-Identifier: GPL-3.0-only
 
+#[cfg(target_os = "linux")]
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+#[cfg(target_os = "linux")]
+use std::path::PathBuf;
 
+#[cfg(target_os = "linux")]
 use directories::BaseDirs;
 use prism_core::catalog::AppEntry;
 use thiserror::Error;

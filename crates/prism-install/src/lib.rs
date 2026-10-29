@@ -243,10 +243,10 @@ impl InstallationManager {
         target_version_dir: &Path,
     ) -> Result<(), InstallError> {
         let current_link = self.current_link_path(app)?;
-        let temp_link = self.app_dir(app)?.join("current.tmp");
 
         #[cfg(unix)]
         {
+            let temp_link = self.app_dir(app)?.join("current.tmp");
             let _ = fs::remove_file(&temp_link);
             std::os::unix::fs::symlink(target_version_dir, &temp_link)?;
             fs::rename(&temp_link, &current_link)?;
