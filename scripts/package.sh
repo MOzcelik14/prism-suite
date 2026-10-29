@@ -32,6 +32,7 @@ case "$OS" in
         cp "$ROOT_DIR/target/release/prism" "$PKG_DIR/"
         cp "$ROOT_DIR/README.md" "$PKG_DIR/"
         cp "$ROOT_DIR/LICENSE" "$PKG_DIR/"
+        cp -r "$ROOT_DIR/assets" "$PKG_DIR/"
 
         TAR_FILE="$DIST_DIR/${PKG_NAME}.tar.gz"
         echo "==> Creating tarball $TAR_FILE..."
@@ -48,6 +49,7 @@ case "$OS" in
         cp "$ROOT_DIR/target/release/prism.exe" "$PKG_DIR/"
         cp "$ROOT_DIR/README.md" "$PKG_DIR/"
         cp "$ROOT_DIR/LICENSE" "$PKG_DIR/"
+        cp -r "$ROOT_DIR/assets" "$PKG_DIR/"
 
         ZIP_FILE="$DIST_DIR/${PKG_NAME}.zip"
         echo "==> Creating zip $ZIP_FILE..."

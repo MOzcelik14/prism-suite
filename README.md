@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="prisM. Suite logo" width="220" />
+</p>
+
 # prisM. Suite
 
 [![CI](https://github.com/MOzcelik14/prism-suite/actions/workflows/ci.yml/badge.svg)](https://github.com/MOzcelik14/prism-suite/actions/workflows/ci.yml)

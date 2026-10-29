@@ -60,6 +60,7 @@ jobs:
           mkdir -p "staging/${PKG_NAME}"
           cp "target/${{ matrix.target }}/release/${{ matrix.binary }}" "staging/${PKG_NAME}/"
           cp README.md LICENSE "staging/${PKG_NAME}/"
+          cp -r assets "staging/${PKG_NAME}/"
           tar -czf "${PKG_NAME}.tar.gz" -C staging "${PKG_NAME}"
           mkdir -p artifacts
           mv "${PKG_NAME}.tar.gz" artifacts/
@@ -73,6 +74,7 @@ jobs:
           mkdir -p "staging/${PKG_NAME}"
           cp "target/${{ matrix.target }}/release/${{ matrix.binary }}" "staging/${PKG_NAME}/"
           cp README.md LICENSE "staging/${PKG_NAME}/"
+          cp -r assets "staging/${PKG_NAME}/"
           7z a -tzip "${PKG_NAME}.zip" "./staging/${PKG_NAME}"
           mkdir -p artifacts
           mv "${PKG_NAME}.zip" artifacts/

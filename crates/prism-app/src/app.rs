@@ -118,6 +118,7 @@ pub struct PrismApp {
     dismissed_launcher_update: bool,
     discovered_releases: Vec<(String, ReleaseInfo)>,
     custom_dir_input: String,
+    logo_texture: Option<egui::TextureHandle>,
 }
 
 impl PrismApp {
@@ -189,6 +190,7 @@ impl PrismApp {
             dismissed_launcher_update: false,
             discovered_releases: Vec::new(),
             custom_dir_input,
+            logo_texture: None,
         };
 
         if app.config.should_check_on_startup() {
@@ -789,6 +791,15 @@ impl eframe::App for PrismApp {
             }
         }
 
+        // Lazy load app logo texture
+        if self.logo_texture.is_none() {
+            let image = egui::ColorImage::from_rgba_unmultiplied(
+                [256, 256],
+                include_bytes!("../../../assets/icon.rgba"),
+            );
+            self.logo_texture = Some(ctx.load_texture("prism_logo", image, Default::default()));
+        }
+
         // Top Navigation Header
         egui::TopBottomPanel::top("top_header")
             .frame(
@@ -799,9 +810,13 @@ impl eframe::App for PrismApp {
             )
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
-                    let (logo_rect, _) =
-                        ui.allocate_exact_size(vec2(36.0_f32, 36.0_f32), egui::Sense::hover());
-                    draw_suite_logo(ui.painter(), logo_rect);
+                    if let Some(ref tex) = self.logo_texture {
+                        ui.image((tex.id(), vec2(36.0_f32, 36.0_f32)));
+                    } else {
+                        let (logo_rect, _) =
+                            ui.allocate_exact_size(vec2(36.0_f32, 36.0_f32), egui::Sense::hover());
+                        draw_suite_logo(ui.painter(), logo_rect);
+                    }
 
                     ui.add_space(8.0_f32);
 
@@ -2046,9 +2061,13 @@ impl PrismApp {
                 ui.add_space(8.0_f32);
 
                 ui.vertical_centered(|ui| {
-                    let (logo_rect, _) =
-                        ui.allocate_exact_size(vec2(64.0_f32, 64.0_f32), egui::Sense::hover());
-                    draw_suite_logo(ui.painter(), logo_rect);
+                    if let Some(ref tex) = self.logo_texture {
+                        ui.image((tex.id(), vec2(80.0_f32, 80.0_f32)));
+                    } else {
+                        let (logo_rect, _) =
+                            ui.allocate_exact_size(vec2(64.0_f32, 64.0_f32), egui::Sense::hover());
+                        draw_suite_logo(ui.painter(), logo_rect);
+                    }
 
                     ui.add_space(10.0_f32);
 
