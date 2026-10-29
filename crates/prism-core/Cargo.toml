@@ -1,0 +1,15 @@
+[package]
+name = "prism-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true
+ron.workspace = true
+thiserror.workspace = true
+semver.workspace = true
+directories.workspace = true
+log.workspace = true

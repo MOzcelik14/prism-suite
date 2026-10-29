@@ -1,0 +1,24 @@
+[package]
+name = "prism-app"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "prism"
+path = "src/main.rs"
+
+[dependencies]
+prism-core.workspace = true
+prism-i18n.workspace = true
+prism-net.workspace = true
+prism-install.workspace = true
+
+eframe.workspace = true
+egui.workspace = true
+crossbeam-channel.workspace = true
+directories.workspace = true
+log.workspace = true
+env_logger.workspace = true

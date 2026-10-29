@@ -1,0 +1,37 @@
+(
+    apps: [
+        (
+            id: Trim,
+            display_name: "triM.",
+            category: "video",
+            tagline_key: "app-trim-tagline",
+            description_key: "app-trim-description",
+            repository: "https://github.com/MOzcelik14/triM",
+            default_branch: "master",
+            primary_binary_name: "trim",
+            accent_color: (56, 189, 248), // Sky / Cyan
+        ),
+        (
+            id: Stem,
+            display_name: "steM.",
+            category: "audio",
+            tagline_key: "app-stem-tagline",
+            description_key: "app-stem-description",
+            repository: "https://github.com/MOzcelik14/steM",
+            default_branch: "main",
+            primary_binary_name: "stem",
+            accent_color: (52, 211, 153), // Emerald / Mint
+        ),
+        (
+            id: Beam,
+            display_name: "beaM.",
+            category: "photo",
+            tagline_key: "app-beam-tagline",
+            description_key: "app-beam-description",
+            repository: "https://github.com/MOzcelik14/beaM",
+            default_branch: "master",
+            primary_binary_name: "beam",
+            accent_color: (192, 132, 252), // Violet / Purple
+        ),
+    ]
+)

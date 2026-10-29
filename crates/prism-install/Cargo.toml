@@ -1,0 +1,16 @@
+[package]
+name = "prism-install"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+prism-core.workspace = true
+zip.workspace = true
+tar.workspace = true
+flate2.workspace = true
+directories.workspace = true
+thiserror.workspace = true
+log.workspace = true
