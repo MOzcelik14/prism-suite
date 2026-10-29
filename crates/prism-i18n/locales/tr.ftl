@@ -113,3 +113,21 @@ msg-rollback-success = Önceki sürüme başarıyla geri dönüldü.
 msg-uninstall-success = Uygulama başarıyla kaldırıldı.
 msg-launched-success = Uygulama başlatıldı.
 msg-launcher-updated = prisM. Suite v{ $version } sürümüne güncellendi. Lütfen yeniden başlatın.
+
+# Toolbar & Grid
+filter-all = TÜMÜ
+filter-installed = YÜKLÜ
+filter-updates = GÜNCELLEMELER
+section-creative-apps = 01 / YARATICI UYGULAMALAR
+apps-count-label = { $count } UYGULAMA
+btn-update-all = TÜMÜNÜ GÜNCELLE
+footer-checked = DENETLENDİ: AZ ÖNCE · GITHUB
+footer-offline = ÇEVRİMDIŞI · YEREL MOD
+status-available-to-install = KURULABİLİR
+status-in-development = GELİŞTİRİLİYOR
+status-up-to-date = YÜKLÜ · GÜNCEL
+
+# Comparisons
+compare-trim = Adobe Premiere Pro® alternatifi
+compare-stem = Audacity & Reaper alternatifi
+compare-beam = Adobe Lightroom® alternatifi

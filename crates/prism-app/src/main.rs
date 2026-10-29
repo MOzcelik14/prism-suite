@@ -23,8 +23,8 @@ fn main() -> eframe::Result<()> {
         viewport: egui::ViewportBuilder::default()
             .with_title(SUITE_DISPLAY_NAME)
             .with_icon(icon_data)
-            .with_inner_size([980.0, 720.0])
-            .with_min_inner_size([800.0, 560.0])
+            .with_inner_size([1160.0, 760.0])
+            .with_min_inner_size([880.0, 580.0])
             .with_active(true),
         ..Default::default()
     };

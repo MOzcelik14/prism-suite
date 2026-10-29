@@ -113,3 +113,21 @@ msg-rollback-success = Successfully rolled back to previous version.
 msg-uninstall-success = Application uninstalled successfully.
 msg-launched-success = Application launched.
 msg-launcher-updated = prisM. Suite has been updated to v{ $version }. Please restart.
+
+# Toolbar & Grid
+filter-all = ALL
+filter-installed = INSTALLED
+filter-updates = UPDATES
+section-creative-apps = 01 / CREATIVE APPS
+apps-count-label = { $count } APPS
+btn-update-all = UPDATE ALL
+footer-checked = CHECKED: JUST NOW · GITHUB
+footer-offline = OFFLINE · LOCAL MODE
+status-available-to-install = AVAILABLE TO INSTALL
+status-in-development = IN DEVELOPMENT
+status-up-to-date = INSTALLED · UP TO DATE
+
+# Comparisons
+compare-trim = Like Adobe Premiere Pro®
+compare-stem = Like Audacity & Reaper
+compare-beam = Like Adobe Lightroom®

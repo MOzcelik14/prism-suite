@@ -39,6 +39,15 @@ pub enum ActiveTab {
     WhatsNew,
 }
 
+/// Filter categories for the app grid.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum AppFilter {
+    #[default]
+    All,
+    Installed,
+    Updates,
+}
+
 /// Operational state of the launcher self-updater.
 #[derive(Debug, Clone, PartialEq)]
 pub enum LauncherSelfUpdateState {
@@ -114,6 +123,7 @@ pub struct PrismApp {
     last_process_poll: std::time::Instant,
     status_message: Option<(String, std::time::Instant)>,
     active_tab: ActiveTab,
+    app_filter: AppFilter,
     launcher_update_state: LauncherSelfUpdateState,
     dismissed_launcher_update: bool,
     discovered_releases: Vec<(String, ReleaseInfo)>,
@@ -187,6 +197,7 @@ impl PrismApp {
             last_process_poll: std::time::Instant::now(),
             status_message: None,
             active_tab: ActiveTab::default(),
+            app_filter: AppFilter::default(),
             launcher_update_state: LauncherSelfUpdateState::Idle,
             dismissed_launcher_update: false,
             discovered_releases: Vec::new(),
@@ -1033,31 +1044,57 @@ impl eframe::App for PrismApp {
             _ => {}
         }
 
-        // Bottom status footer if message exists
-        if let Some((ref msg, _)) = self.status_message {
-            egui::TopBottomPanel::bottom("status_footer")
-                .frame(
-                    egui::Frame::none()
-                        .fill(BG_CARD)
-                        .inner_margin(egui::Margin::symmetric(20.0_f32, 8.0_f32))
-                        .stroke(Stroke::new(1.0_f32, BORDER_COLOR)),
-                )
-                .show(ctx, |ui| {
-                    ui.horizontal(|ui| {
+        // Bottom permanent hairline status & ecosystem footer (ArtCraft style)
+        egui::TopBottomPanel::bottom("suite_footer")
+            .frame(
+                egui::Frame::none()
+                    .fill(BG_SECONDARY)
+                    .inner_margin(egui::Margin::symmetric(24.0_f32, 9.0_f32))
+                    .stroke(Stroke::new(1.0_f32, BORDER_COLOR)),
+            )
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    if let Some((ref msg, _)) = self.status_message {
                         ui.label(RichText::new("ℹ ").color(ACCENT_CYAN));
-                        ui.label(RichText::new(msg).size(12.0_f32).color(TEXT_PRIMARY));
+                        ui.label(RichText::new(msg).size(11.5_f32).color(TEXT_PRIMARY));
+                    } else {
+                        ui.label(
+                            RichText::new(self.i18n.text("footer-checked"))
+                                .size(11.0_f32)
+                                .color(TEXT_MUTED),
+                        );
+                    }
+
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        ui.label(RichText::new("GPL-3.0").size(11.0_f32).color(TEXT_MUTED));
+                        ui.label(RichText::new("•").size(11.0_f32).color(TEXT_MUTED));
+                        ui.label(
+                            RichText::new(format!("v{}", SUITE_VERSION))
+                                .size(11.0_f32)
+                                .color(TEXT_MUTED),
+                        );
+                        ui.label(RichText::new("•").size(11.0_f32).color(TEXT_MUTED));
+                        if ui
+                            .hyperlink_to(
+                                RichText::new("GitHub Kuruluşu ↗")
+                                    .size(11.0_f32)
+                                    .color(TEXT_MUTED),
+                                "https://github.com/MOzcelik14",
+                            )
+                            .clicked()
+                        {}
                     });
                 });
-        }
+            });
 
         // Central Content Area
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| match self.active_tab {
                 ActiveTab::Apps => {
                     let total_width = ui.available_width();
-                    let max_content_width = 920.0_f32;
-                    let content_width = total_width.min(max_content_width);
-                    let side_pad = ((total_width - content_width) / 2.0).max(28.0_f32);
+                    let max_content_width = 1180.0_f32;
+                    let content_width = total_width.min(max_content_width).max(320.0_f32);
+                    let side_pad = ((total_width - content_width) / 2.0).max(20.0_f32);
 
                     ui.add_space(20.0_f32);
 
@@ -1066,32 +1103,150 @@ impl eframe::App for PrismApp {
                         ui.vertical(|ui| {
                             ui.set_width(content_width);
 
-                            // Section Header
+                            // Toolbar: Filter tabs and update-all (ArtCraft style)
+                            let (all_cnt, inst_cnt, upd_cnt) = self.app_counts();
+                            ui.horizontal(|ui| {
+                                let filter_all_text =
+                                    format!("{} {}", self.i18n.text("filter-all"), all_cnt);
+                                let filter_inst_text =
+                                    format!("{} {}", self.i18n.text("filter-installed"), inst_cnt);
+                                let filter_upd_text =
+                                    format!("{} {}", self.i18n.text("filter-updates"), upd_cnt);
+
+                                let f_all = ui.selectable_label(
+                                    self.app_filter == AppFilter::All,
+                                    RichText::new(filter_all_text).size(12.0_f32),
+                                );
+                                if f_all.clicked() {
+                                    self.app_filter = AppFilter::All;
+                                }
+
+                                let f_inst = ui.selectable_label(
+                                    self.app_filter == AppFilter::Installed,
+                                    RichText::new(filter_inst_text).size(12.0_f32),
+                                );
+                                if f_inst.clicked() {
+                                    self.app_filter = AppFilter::Installed;
+                                }
+
+                                let f_upd = ui.selectable_label(
+                                    self.app_filter == AppFilter::Updates,
+                                    RichText::new(filter_upd_text).size(12.0_f32),
+                                );
+                                if f_upd.clicked() {
+                                    self.app_filter = AppFilter::Updates;
+                                }
+
+                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                    if upd_cnt > 0 {
+                                        let update_all_btn = Button::new(
+                                            RichText::new(format!(
+                                                "{} ({})",
+                                                self.i18n.text("btn-update-all"),
+                                                upd_cnt
+                                            ))
+                                            .strong()
+                                            .size(12.0_f32)
+                                            .color(Color32::WHITE),
+                                        )
+                                        .fill(ACCENT_INDIGO)
+                                        .rounding(Rounding::same(4.0_f32));
+
+                                        if ui.add(update_all_btn).clicked() {
+                                            self.update_all_apps();
+                                        }
+                                    } else {
+                                        ui.label(
+                                            RichText::new("Tüm Sistemler Güncel")
+                                                .size(11.5_f32)
+                                                .color(TEXT_MUTED),
+                                        );
+                                    }
+                                });
+                            });
+
+                            ui.add_space(16.0_f32);
+
+                            // Section hairline divider: 01 / YARATICI UYGULAMALAR
                             ui.horizontal(|ui| {
                                 ui.label(
-                                    RichText::new(self.i18n.text("nav-apps"))
-                                        .size(22.0_f32)
+                                    RichText::new(self.i18n.text("section-creative-apps"))
+                                        .size(11.5_f32)
                                         .strong()
-                                        .color(TEXT_PRIMARY),
+                                        .color(TEXT_MUTED),
                                 );
                                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                                     ui.label(
-                                        RichText::new("3 Yaratıcı Uygulama")
-                                            .size(12.0_f32)
-                                            .color(TEXT_MUTED),
+                                        RichText::new(self.i18n.text_with_arg(
+                                            "apps-count-label",
+                                            "count",
+                                            &all_cnt.to_string(),
+                                        ))
+                                        .size(11.0_f32)
+                                        .color(TEXT_MUTED),
                                     );
                                 });
                             });
 
+                            ui.add_space(4.0_f32);
+                            ui.separator();
                             ui.add_space(14.0_f32);
 
-                            let apps = self.catalog.all().to_vec();
-                            for app in &apps {
-                                self.render_app_card(ui, app, content_width);
-                                ui.add_space(16.0_f32);
+                            // Responsive App Cards Grid
+                            let filtered_apps = self.filtered_apps();
+                            if filtered_apps.is_empty() {
+                                ui.add_space(40.0_f32);
+                                ui.vertical_centered(|ui| {
+                                    ui.label(
+                                        RichText::new("Bu filtreye uygun uygulama bulunamadı.")
+                                            .size(13.5_f32)
+                                            .color(TEXT_MUTED),
+                                    );
+                                });
+                            } else if content_width >= 860.0_f32 {
+                                // 3 Columns Grid
+                                let cols = 3;
+                                let spacing = 16.0_f32;
+                                let card_w =
+                                    (content_width - (cols as f32 - 1.0) * spacing) / cols as f32;
+
+                                ui.columns(cols, |columns| {
+                                    for (i, app) in filtered_apps.iter().enumerate() {
+                                        let col_idx = i % cols;
+                                        self.render_grid_app_card(
+                                            &mut columns[col_idx],
+                                            app,
+                                            i + 1,
+                                            card_w,
+                                        );
+                                    }
+                                });
+                            } else if content_width >= 560.0_f32 {
+                                // 2 Columns Grid
+                                let cols = 2;
+                                let spacing = 16.0_f32;
+                                let card_w = (content_width - spacing) / 2.0_f32;
+
+                                ui.columns(cols, |columns| {
+                                    for (i, app) in filtered_apps.iter().enumerate() {
+                                        let col_idx = i % cols;
+                                        self.render_grid_app_card(
+                                            &mut columns[col_idx],
+                                            app,
+                                            i + 1,
+                                            card_w,
+                                        );
+                                    }
+                                });
+                            } else {
+                                // 1 Column Stack
+                                for (i, app) in filtered_apps.iter().enumerate() {
+                                    self.render_grid_app_card(ui, app, i + 1, content_width);
+                                    ui.add_space(16.0_f32);
+                                }
                             }
 
-                            ui.add_space(8.0_f32);
+                            ui.add_space(24.0_f32);
 
                             // Suite ecosystem footer card
                             egui::Frame::none()
@@ -1108,12 +1263,20 @@ impl eframe::App for PrismApp {
                                                 .color(TEXT_PRIMARY),
                                         );
                                         ui.label(
-                                            RichText::new("— Tüm uygulamalar açık kaynaklı, bağımsız ve yerel araçlardır.")
-                                                .size(12.0_f32)
-                                                .color(TEXT_MUTED),
+                                            RichText::new(
+                                                "— Tüm uygulamalar açık kaynaklı, bağımsız ve yerel araçlardır.",
+                                            )
+                                            .size(12.0_f32)
+                                            .color(TEXT_MUTED),
                                         );
                                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                            if ui.hyperlink_to("GitHub Kuruluşu ↗", "https://github.com/MOzcelik14").clicked() {}
+                                            if ui
+                                                .hyperlink_to(
+                                                    "GitHub Kuruluşu ↗",
+                                                    "https://github.com/MOzcelik14",
+                                                )
+                                                .clicked()
+                                            {}
                                         });
                                     });
                                 });
@@ -1152,10 +1315,77 @@ impl eframe::App for PrismApp {
 }
 
 impl PrismApp {
-    fn render_app_card(&mut self, ui: &mut Ui, app: &prism_core::AppEntry, card_width: f32) {
-        let card_height = 118.0_f32;
-        let mut clicked_details = false;
+    fn app_counts(&self) -> (usize, usize, usize) {
+        let all = self.catalog.all().len();
+        let mut installed = 0;
+        let mut updates = 0;
+        for app in self.catalog.all() {
+            if let Some(state) = self.states.get(&app.id) {
+                match state {
+                    AppInstallState::Installed { .. } | AppInstallState::Running => {
+                        installed += 1;
+                    }
+                    AppInstallState::UpdateAvailable { .. } => {
+                        installed += 1;
+                        updates += 1;
+                    }
+                    _ => {}
+                }
+            }
+        }
+        (all, installed, updates)
+    }
 
+    fn filtered_apps(&self) -> Vec<prism_core::AppEntry> {
+        let apps = self.catalog.all().to_vec();
+        match self.app_filter {
+            AppFilter::All => apps,
+            AppFilter::Installed => apps
+                .into_iter()
+                .filter(|a| {
+                    if let Some(state) = self.states.get(&a.id) {
+                        matches!(
+                            state,
+                            AppInstallState::Installed { .. }
+                                | AppInstallState::Running
+                                | AppInstallState::UpdateAvailable { .. }
+                        )
+                    } else {
+                        false
+                    }
+                })
+                .collect(),
+            AppFilter::Updates => apps
+                .into_iter()
+                .filter(|a| {
+                    if let Some(state) = self.states.get(&a.id) {
+                        matches!(state, AppInstallState::UpdateAvailable { .. })
+                    } else {
+                        false
+                    }
+                })
+                .collect(),
+        }
+    }
+
+    fn update_all_apps(&mut self) {
+        let apps = self.catalog.all().to_vec();
+        for app in apps {
+            if let Some(AppInstallState::UpdateAvailable { latest_release, .. }) =
+                self.states.get(&app.id).cloned()
+            {
+                self.start_install_pipeline(app.id, latest_release);
+            }
+        }
+    }
+
+    fn render_grid_app_card(
+        &mut self,
+        ui: &mut Ui,
+        app: &prism_core::AppEntry,
+        index_num: usize,
+        card_width: f32,
+    ) {
         let current_state =
             self.states
                 .get(&app.id)
@@ -1164,21 +1394,61 @@ impl PrismApp {
                     latest_release: None,
                 });
 
-        let card_rect = ui
-            .allocate_ui(vec2(card_width, card_height), |ui| {
-                egui::Frame::none()
-                    .fill(BG_CARD)
-                    .rounding(Rounding::same(12.0_f32))
-                    .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
-                    .inner_margin(egui::Margin::same(18.0_f32))
-                    .show(ui, |ui| {
+        let mut clicked_details = false;
+        let card_height = 360.0_f32;
+
+        let accent_col = match app.id {
+            AppId::Trim => ACCENT_CYAN,
+            AppId::Stem => ACCENT_EMERALD,
+            AppId::Beam => ACCENT_VIOLET,
+        };
+
+        let card_resp = ui.allocate_ui(vec2(card_width, card_height), |ui| {
+            egui::Frame::none()
+                .fill(BG_CARD)
+                .rounding(Rounding::same(8.0_f32))
+                .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
+                .inner_margin(egui::Margin::symmetric(18.0_f32, 16.0_f32))
+                .show(ui, |ui| {
+                    ui.vertical(|ui| {
+                        // Top Strip: Index pill + GitHub link (ArtCraft style)
                         ui.horizontal(|ui| {
-                            // Real app icon with rounded container or vector fallback
-                            let icon_size = vec2(76.0_f32, 76.0_f32);
+                            egui::Frame::none()
+                                .fill(accent_col.linear_multiply(0.18_f32))
+                                .stroke(Stroke::new(1.0_f32, accent_col.linear_multiply(0.4_f32)))
+                                .rounding(Rounding::same(4.0_f32))
+                                .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
+                                .show(ui, |ui| {
+                                    ui.label(
+                                        RichText::new(format!("{:02}", index_num))
+                                            .size(11.0_f32)
+                                            .strong()
+                                            .color(accent_col),
+                                    );
+                                });
+
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                if ui
+                                    .hyperlink_to(
+                                        RichText::new("GitHub ↗").size(12.0_f32).color(TEXT_MUTED),
+                                        &app.repository,
+                                    )
+                                    .clicked()
+                                {}
+                            });
+                        });
+
+                        ui.add_space(8.0_f32);
+                        ui.separator();
+                        ui.add_space(10.0_f32);
+
+                        // App Icon + Title + Subtitle
+                        ui.horizontal(|ui| {
+                            let icon_size = vec2(58.0_f32, 58.0_f32);
                             if let Some(tex) = self.app_textures.get(&app.id) {
                                 ui.add(
                                     egui::Image::new((tex.id(), icon_size))
-                                        .rounding(Rounding::same(12.0_f32)),
+                                        .rounding(Rounding::same(10.0_f32)),
                                 );
                             } else {
                                 let (icon_rect, _) =
@@ -1186,112 +1456,434 @@ impl PrismApp {
                                 draw_app_icon(ui.painter(), icon_rect, app.id);
                             }
 
-                            ui.add_space(18.0_f32);
+                            ui.add_space(12.0_f32);
 
-                            // Metadata & descriptions column
                             ui.vertical(|ui| {
-                                ui.horizontal(|ui| {
-                                    ui.label(
-                                        RichText::new(&app.display_name)
-                                            .size(20.0_f32)
-                                            .strong()
-                                            .color(TEXT_PRIMARY),
-                                    );
-
-                                    let (cat_color, cat_bg) = match app.id {
-                                        AppId::Trim => (
-                                            ACCENT_CYAN,
-                                            Color32::from_rgba_unmultiplied(56, 189, 248, 24),
-                                        ),
-                                        AppId::Stem => (
-                                            ACCENT_EMERALD,
-                                            Color32::from_rgba_unmultiplied(52, 211, 153, 24),
-                                        ),
-                                        AppId::Beam => (
-                                            ACCENT_VIOLET,
-                                            Color32::from_rgba_unmultiplied(192, 132, 252, 24),
-                                        ),
-                                    };
-
-                                    // Category pill badge
-                                    egui::Frame::none()
-                                        .fill(cat_bg)
-                                        .rounding(Rounding::same(4.0_f32))
-                                        .stroke(Stroke::new(
-                                            1.0_f32,
-                                            cat_color.linear_multiply(0.4_f32),
-                                        ))
-                                        .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
-                                        .show(ui, |ui| {
-                                            ui.label(
-                                                RichText::new(app.category.to_uppercase())
-                                                    .size(9.5_f32)
-                                                    .strong()
-                                                    .color(cat_color),
-                                            );
-                                        });
-
-                                    self.render_status_badge(ui, &current_state);
-                                });
-
-                                ui.add_space(4.0_f32);
-
                                 ui.label(
-                                    RichText::new(self.i18n.text(&app.tagline_key))
-                                        .size(13.5_f32)
-                                        .color(Color32::from_rgb(226, 232, 240)),
+                                    RichText::new(&app.display_name)
+                                        .size(20.0_f32)
+                                        .strong()
+                                        .color(TEXT_PRIMARY),
                                 );
 
-                                ui.add_space(3.0_f32);
+                                let cat_name = match app.id {
+                                    AppId::Trim => "Video Düzenleyici",
+                                    AppId::Stem => "Ses Çalışma İstasyonu",
+                                    AppId::Beam => "RAW Fotoğraf Düzenleyici",
+                                };
+                                ui.label(RichText::new(cat_name).size(12.0_f32).color(TEXT_MUTED));
 
-                                if let AppInstallState::Downloading { progress, .. } = current_state
-                                {
-                                    ui.add(ProgressBar::new(progress).desired_width(280.0_f32));
+                                let comparison = match app.id {
+                                    AppId::Trim => self.i18n.text("compare-trim"),
+                                    AppId::Stem => self.i18n.text("compare-stem"),
+                                    AppId::Beam => self.i18n.text("compare-beam"),
+                                };
+                                ui.label(
+                                    RichText::new(comparison)
+                                        .size(11.0_f32)
+                                        .italics()
+                                        .color(TEXT_MUTED.linear_multiply(0.85_f32)),
+                                );
+                            });
+                        });
+
+                        ui.add_space(12.0_f32);
+
+                        // Status Badge
+                        ui.horizontal(|ui| {
+                            self.render_grid_status_badge(ui, &current_state);
+                        });
+
+                        ui.add_space(4.0_f32);
+
+                        // Version line
+                        let version_str = match &current_state {
+                            AppInstallState::NotInstalled { latest_release } => {
+                                if let Some(r) = latest_release {
+                                    format!("Sürüm {} · Güncel", r.version)
                                 } else {
-                                    ui.label(
-                                        RichText::new(self.i18n.text(&app.description_key))
-                                            .size(11.5_f32)
-                                            .color(TEXT_MUTED),
-                                    );
+                                    "Aktif Geliştirme Aşamasında".to_string()
+                                }
+                            }
+                            AppInstallState::NoReleaseAvailable => {
+                                "Aktif Geliştirme Aşamasında".to_string()
+                            }
+                            AppInstallState::Installed { version, .. } => {
+                                format!("Sürüm {} Kurulu", version)
+                            }
+                            AppInstallState::UpdateAvailable { latest_release, .. } => {
+                                format!("Yeni Sürüm: {}", latest_release.version)
+                            }
+                            AppInstallState::Downloading { .. } => "İndiriliyor...".to_string(),
+                            AppInstallState::Verifying => "Doğrulanıyor...".to_string(),
+                            AppInstallState::Installing => "Kuruluyor...".to_string(),
+                            AppInstallState::Running => "Çalışıyor".to_string(),
+                            AppInstallState::Error { message } => format!("Hata: {}", message),
+                        };
+
+                        ui.label(RichText::new(version_str).size(11.5_f32).color(TEXT_MUTED));
+
+                        ui.add_space(8.0_f32);
+
+                        // Tagline
+                        ui.label(
+                            RichText::new(self.i18n.text(&app.tagline_key))
+                                .size(12.0_f32)
+                                .color(Color32::from_rgb(203, 213, 225)),
+                        );
+
+                        ui.add_space(14.0_f32);
+
+                        // Bottom Actions (pinned)
+                        if let AppInstallState::Downloading { progress, .. } = current_state {
+                            ui.vertical(|ui| {
+                                ui.add(
+                                    ProgressBar::new(progress).desired_width(ui.available_width()),
+                                );
+                                ui.add_space(4.0_f32);
+                                if ui
+                                    .button(self.i18n.text("action-cancel-download"))
+                                    .clicked()
+                                {
+                                    self.cancel_download(app.id);
                                 }
                             });
+                        } else {
+                            ui.horizontal(|ui| {
+                                let primary_btn_w =
+                                    (ui.available_width() - 86.0_f32).max(100.0_f32);
 
-                            // Action buttons aligned right
-                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                self.render_app_actions(ui, app, &current_state);
-
-                                ui.add_space(8.0_f32);
+                                self.render_grid_primary_action(
+                                    ui,
+                                    app,
+                                    &current_state,
+                                    primary_btn_w,
+                                );
 
                                 let details_btn = Button::new(
-                                    RichText::new(self.i18n.text("action-details")).size(12.5_f32),
+                                    RichText::new(self.i18n.text("action-details")).size(12.0_f32),
                                 )
                                 .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
                                 .rounding(Rounding::same(6.0_f32))
-                                .min_size(vec2(76.0_f32, 32.0_f32));
+                                .min_size(vec2(78.0_f32, 34.0_f32));
 
                                 if ui.add(details_btn).clicked() {
                                     clicked_details = true;
                                 }
                             });
-                        });
+                        }
                     });
-            })
-            .response
-            .rect;
+                });
+        });
+
+        let card_rect = card_resp.response.rect;
+        let is_hovered = ui.rect_contains_pointer(card_rect);
+
+        if is_hovered {
+            // Draw glowing border & top hairline accent wipe
+            ui.painter().rect_stroke(
+                card_rect,
+                Rounding::same(8.0_f32),
+                Stroke::new(1.0_f32, accent_col.linear_multiply(0.6_f32)),
+            );
+            let top_bar =
+                egui::Rect::from_min_size(card_rect.min, vec2(card_rect.width(), 2.0_f32));
+            ui.painter()
+                .rect_filled(top_bar, Rounding::same(1.0_f32), accent_col);
+        }
 
         if clicked_details {
             self.selected_detail_app = Some(app.id);
         }
+    }
 
-        if ui.rect_contains_pointer(card_rect) {
-            ui.painter().rect_stroke(
-                card_rect,
-                Rounding::same(12.0_f32),
-                Stroke::new(
-                    1.0_f32,
-                    Color32::from_rgb(99, 102, 241).linear_multiply(0.4_f32),
-                ),
-            );
+    fn render_grid_status_badge(&self, ui: &mut Ui, state: &AppInstallState) {
+        match state {
+            AppInstallState::NotInstalled { latest_release } => {
+                if latest_release.is_some() {
+                    egui::Frame::none()
+                        .fill(Color32::from_rgba_unmultiplied(56, 189, 248, 22))
+                        .rounding(Rounding::same(4.0_f32))
+                        .stroke(Stroke::new(1.0_f32, ACCENT_CYAN.linear_multiply(0.4_f32)))
+                        .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
+                        .show(ui, |ui| {
+                            ui.label(
+                                RichText::new(self.i18n.text("status-available-to-install"))
+                                    .size(10.0_f32)
+                                    .strong()
+                                    .color(ACCENT_CYAN),
+                            );
+                        });
+                } else {
+                    egui::Frame::none()
+                        .fill(Color32::from_rgba_unmultiplied(148, 163, 184, 18))
+                        .rounding(Rounding::same(4.0_f32))
+                        .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
+                        .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
+                        .show(ui, |ui| {
+                            ui.label(
+                                RichText::new(self.i18n.text("status-in-development"))
+                                    .size(10.0_f32)
+                                    .color(TEXT_MUTED),
+                            );
+                        });
+                }
+            }
+            AppInstallState::NoReleaseAvailable => {
+                egui::Frame::none()
+                    .fill(Color32::from_rgba_unmultiplied(148, 163, 184, 18))
+                    .rounding(Rounding::same(4.0_f32))
+                    .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
+                    .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
+                    .show(ui, |ui| {
+                        ui.label(
+                            RichText::new(self.i18n.text("status-in-development"))
+                                .size(10.0_f32)
+                                .color(TEXT_MUTED),
+                        );
+                    });
+            }
+            AppInstallState::Installed { .. } => {
+                egui::Frame::none()
+                    .fill(Color32::from_rgba_unmultiplied(52, 211, 153, 22))
+                    .rounding(Rounding::same(4.0_f32))
+                    .stroke(Stroke::new(
+                        1.0_f32,
+                        ACCENT_EMERALD.linear_multiply(0.4_f32),
+                    ))
+                    .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
+                    .show(ui, |ui| {
+                        ui.label(
+                            RichText::new(self.i18n.text("status-up-to-date"))
+                                .size(10.0_f32)
+                                .strong()
+                                .color(ACCENT_EMERALD),
+                        );
+                    });
+            }
+            AppInstallState::UpdateAvailable { .. } => {
+                egui::Frame::none()
+                    .fill(Color32::from_rgba_unmultiplied(245, 158, 11, 22))
+                    .rounding(Rounding::same(4.0_f32))
+                    .stroke(Stroke::new(1.0_f32, ACCENT_AMBER.linear_multiply(0.4_f32)))
+                    .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
+                    .show(ui, |ui| {
+                        ui.label(
+                            RichText::new(self.i18n.text("status-update-available"))
+                                .size(10.0_f32)
+                                .strong()
+                                .color(ACCENT_AMBER),
+                        );
+                    });
+            }
+            AppInstallState::Downloading { progress, .. } => {
+                egui::Frame::none()
+                    .fill(Color32::from_rgba_unmultiplied(56, 189, 248, 22))
+                    .rounding(Rounding::same(4.0_f32))
+                    .stroke(Stroke::new(1.0_f32, ACCENT_CYAN.linear_multiply(0.4_f32)))
+                    .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
+                    .show(ui, |ui| {
+                        ui.label(
+                            RichText::new(format!(
+                                "{}: {:.0}%",
+                                self.i18n.text("status-downloading"),
+                                progress * 100.0
+                            ))
+                            .size(10.0_f32)
+                            .strong()
+                            .color(ACCENT_CYAN),
+                        );
+                    });
+            }
+            AppInstallState::Verifying => {
+                egui::Frame::none()
+                    .fill(Color32::from_rgba_unmultiplied(56, 189, 248, 22))
+                    .rounding(Rounding::same(4.0_f32))
+                    .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
+                    .show(ui, |ui| {
+                        ui.label(
+                            RichText::new(self.i18n.text("status-verifying"))
+                                .size(10.0_f32)
+                                .color(ACCENT_CYAN),
+                        );
+                    });
+            }
+            AppInstallState::Installing => {
+                egui::Frame::none()
+                    .fill(Color32::from_rgba_unmultiplied(56, 189, 248, 22))
+                    .rounding(Rounding::same(4.0_f32))
+                    .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
+                    .show(ui, |ui| {
+                        ui.label(
+                            RichText::new(self.i18n.text("status-installing"))
+                                .size(10.0_f32)
+                                .color(ACCENT_CYAN),
+                        );
+                    });
+            }
+            AppInstallState::Running => {
+                egui::Frame::none()
+                    .fill(Color32::from_rgba_unmultiplied(52, 211, 153, 24))
+                    .rounding(Rounding::same(4.0_f32))
+                    .stroke(Stroke::new(
+                        1.0_f32,
+                        ACCENT_EMERALD.linear_multiply(0.5_f32),
+                    ))
+                    .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
+                    .show(ui, |ui| {
+                        ui.label(
+                            RichText::new("● Çalışıyor")
+                                .size(10.0_f32)
+                                .strong()
+                                .color(ACCENT_EMERALD),
+                        );
+                    });
+            }
+            AppInstallState::Error { .. } => {
+                egui::Frame::none()
+                    .fill(Color32::from_rgba_unmultiplied(244, 63, 94, 22))
+                    .rounding(Rounding::same(4.0_f32))
+                    .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
+                    .show(ui, |ui| {
+                        ui.label(
+                            RichText::new(self.i18n.text("status-error"))
+                                .size(10.0_f32)
+                                .strong()
+                                .color(Color32::from_rgb(244, 63, 94)),
+                        );
+                    });
+            }
+        }
+    }
+
+    fn render_grid_primary_action(
+        &mut self,
+        ui: &mut Ui,
+        app: &prism_core::AppEntry,
+        state: &AppInstallState,
+        btn_width: f32,
+    ) {
+        match state {
+            AppInstallState::NotInstalled { latest_release } => {
+                if let Some(ref rel) = latest_release {
+                    let install_btn = Button::new(
+                        RichText::new(self.i18n.text("action-install"))
+                            .size(12.5_f32)
+                            .strong()
+                            .color(Color32::WHITE),
+                    )
+                    .fill(ACCENT_INDIGO)
+                    .rounding(Rounding::same(6.0_f32))
+                    .min_size(vec2(btn_width, 34.0_f32));
+
+                    if ui.add(install_btn).clicked() {
+                        self.start_install_pipeline(app.id, rel.clone());
+                    }
+                } else {
+                    let repo_btn = Button::new(
+                        RichText::new("GitHub ↗")
+                            .size(12.0_f32)
+                            .strong()
+                            .color(ACCENT_CYAN),
+                    )
+                    .stroke(Stroke::new(1.0_f32, ACCENT_CYAN.linear_multiply(0.4_f32)))
+                    .fill(Color32::from_rgba_unmultiplied(56, 189, 248, 14))
+                    .rounding(Rounding::same(6.0_f32))
+                    .min_size(vec2(btn_width, 34.0_f32));
+
+                    if ui
+                        .add(repo_btn)
+                        .on_hover_text(format!(
+                            "{} GitHub sayfasını tarayıcıda aç",
+                            app.display_name
+                        ))
+                        .clicked()
+                    {
+                        ui.ctx().open_url(egui::OpenUrl::new_tab(&app.repository));
+                    }
+                }
+            }
+            AppInstallState::NoReleaseAvailable => {
+                let repo_btn = Button::new(
+                    RichText::new("GitHub ↗")
+                        .size(12.0_f32)
+                        .strong()
+                        .color(ACCENT_CYAN),
+                )
+                .stroke(Stroke::new(1.0_f32, ACCENT_CYAN.linear_multiply(0.4_f32)))
+                .fill(Color32::from_rgba_unmultiplied(56, 189, 248, 14))
+                .rounding(Rounding::same(6.0_f32))
+                .min_size(vec2(btn_width, 34.0_f32));
+
+                if ui
+                    .add(repo_btn)
+                    .on_hover_text(format!(
+                        "{} GitHub sayfasını tarayıcıda aç",
+                        app.display_name
+                    ))
+                    .clicked()
+                {
+                    ui.ctx().open_url(egui::OpenUrl::new_tab(&app.repository));
+                }
+            }
+            AppInstallState::Installed { .. } => {
+                let launch_btn = Button::new(
+                    RichText::new(self.i18n.text("action-launch"))
+                        .size(12.5_f32)
+                        .strong()
+                        .color(Color32::WHITE),
+                )
+                .fill(ACCENT_EMERALD.linear_multiply(0.85_f32))
+                .rounding(Rounding::same(6.0_f32))
+                .min_size(vec2(btn_width, 34.0_f32));
+
+                if ui.add(launch_btn).clicked() {
+                    self.launch_application(app.id);
+                }
+            }
+            AppInstallState::UpdateAvailable { latest_release, .. } => {
+                let update_btn = Button::new(
+                    RichText::new(self.i18n.text("action-update"))
+                        .size(12.5_f32)
+                        .strong()
+                        .color(Color32::WHITE),
+                )
+                .fill(ACCENT_AMBER.linear_multiply(0.9_f32))
+                .rounding(Rounding::same(6.0_f32))
+                .min_size(vec2(btn_width, 34.0_f32));
+
+                let rel_clone = latest_release.clone();
+                if ui.add(update_btn).clicked() {
+                    self.start_install_pipeline(app.id, rel_clone);
+                }
+            }
+            AppInstallState::Running => {
+                let running_label = Button::new(
+                    RichText::new("● Çalışıyor")
+                        .size(12.5_f32)
+                        .color(ACCENT_CYAN),
+                )
+                .stroke(Stroke::new(1.0_f32, ACCENT_CYAN.linear_multiply(0.5_f32)))
+                .rounding(Rounding::same(6.0_f32))
+                .min_size(vec2(btn_width, 34.0_f32));
+
+                ui.add_enabled(false, running_label);
+            }
+            AppInstallState::Error { .. } => {
+                let retry_btn = Button::new(
+                    RichText::new(self.i18n.text("action-retry"))
+                        .size(12.0_f32)
+                        .color(Color32::WHITE),
+                )
+                .fill(ACCENT_INDIGO)
+                .rounding(Rounding::same(6.0_f32))
+                .min_size(vec2(btn_width, 34.0_f32));
+
+                if ui.add(retry_btn).clicked() {
+                    self.check_for_updates(true);
+                }
+            }
+            _ => {}
         }
     }
 
