@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Murat Özçelik <mozcelik14>
+// SPDX-License-Identifier: GPL-3.0-only
+
 use std::path::Path;
 use std::process::{Command, Stdio};
 

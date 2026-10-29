@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Murat Özçelik <mozcelik14>
+// SPDX-License-Identifier: GPL-3.0-only
+
 use crate::archive::extract_archive;
 use crate::InstallError;
 use std::fs;

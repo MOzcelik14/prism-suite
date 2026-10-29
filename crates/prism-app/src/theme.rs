@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Murat Özçelik <mozcelik14>
+// SPDX-License-Identifier: GPL-3.0-only
+
 use egui::{Color32, Rounding, Stroke, Visuals};
 
 pub const BG_PRIMARY: Color32 = Color32::from_rgb(15, 16, 20);

@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Murat Özçelik <mozcelik14>
+// SPDX-License-Identifier: GPL-3.0-only
+
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};

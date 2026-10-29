@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Murat Özçelik <mozcelik14>
+// SPDX-License-Identifier: GPL-3.0-only
+
 use prism_core::catalog::AppId;
 use prism_core::manifest::{TargetArch, TargetOs};
 use prism_core::state::{ReleaseChannel, ReleaseInfo};

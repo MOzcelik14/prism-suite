@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Murat Özçelik <mozcelik14>
+// SPDX-License-Identifier: GPL-3.0-only
+
 use crate::NetError;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;

@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Murat Özçelik <mozcelik14>
+// SPDX-License-Identifier: GPL-3.0-only
+
 //! Core branding definitions for the prisM. Suite launcher and creative applications.
 
 /// The display name for the suite as a whole (used in window title, installer, about dialog, docs).

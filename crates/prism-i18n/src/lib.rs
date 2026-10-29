@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Murat Özçelik <mozcelik14>
+// SPDX-License-Identifier: GPL-3.0-only
+
 pub use fluent_bundle::FluentArgs;
 use fluent_bundle::{FluentBundle, FluentResource};
 use std::sync::Arc;

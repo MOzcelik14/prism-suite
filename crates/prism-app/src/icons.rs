@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Murat Özçelik <mozcelik14>
+// SPDX-License-Identifier: GPL-3.0-only
+
 use egui::{epaint::PathShape, Color32, Painter, Pos2, Rect, Rounding, Stroke};
 use prism_core::catalog::AppId;
 
