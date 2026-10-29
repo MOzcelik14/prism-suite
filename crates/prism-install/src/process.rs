@@ -65,15 +65,12 @@ pub fn is_binary_running(binary_name: &str, known_pid: Option<u32>) -> bool {
 }
 
 #[cfg(test)]
+#[cfg(target_os = "linux")]
 mod tests {
     use super::*;
 
     #[test]
     fn test_process_detection_for_current_runner() {
-        // In test runner, the current process or sh/cargo is running
-        #[cfg(target_os = "linux")]
-        {
-            assert!(!is_binary_running("nonexistent_binary_xyz_12345", None));
-        }
+        assert!(!is_binary_running("nonexistent_binary_xyz_12345", None));
     }
 }

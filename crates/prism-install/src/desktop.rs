@@ -111,6 +111,7 @@ fn remove_windows_shortcut(_app: &AppEntry) -> Result<(), DesktopError> {
 }
 
 #[cfg(test)]
+#[cfg(target_os = "linux")]
 mod tests {
     use super::*;
     use prism_core::catalog::AppCatalog;
@@ -121,21 +122,18 @@ mod tests {
         let trim = catalog.get(prism_core::AppId::Trim).unwrap();
         let bin_path = Path::new("/opt/prism/apps/trim/current/trim");
 
-        #[cfg(target_os = "linux")]
-        {
-            let res = install_linux_desktop_file(trim, bin_path);
-            assert!(res.is_ok());
+        let res = install_linux_desktop_file(trim, bin_path);
+        assert!(res.is_ok());
 
-            let apps_dir = linux_applications_dir().unwrap();
-            let file_path = apps_dir.join("prism-trim.desktop");
-            assert!(file_path.exists());
+        let apps_dir = linux_applications_dir().unwrap();
+        let file_path = apps_dir.join("prism-trim.desktop");
+        assert!(file_path.exists());
 
-            let content = fs::read_to_string(&file_path).unwrap();
-            assert!(content.contains("Name=triM."));
-            assert!(content.contains("Exec=\"/opt/prism/apps/trim/current/trim\" %F"));
+        let content = fs::read_to_string(&file_path).unwrap();
+        assert!(content.contains("Name=triM."));
+        assert!(content.contains("Exec=\"/opt/prism/apps/trim/current/trim\" %F"));
 
-            let _ = remove_linux_desktop_file(trim);
-            assert!(!file_path.exists());
-        }
+        let _ = remove_linux_desktop_file(trim);
+        assert!(!file_path.exists());
     }
 }
