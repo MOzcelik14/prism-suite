@@ -115,6 +115,7 @@ mod tests {
     use std::io::Write;
 
     #[test]
+    #[cfg(target_os = "linux")]
     fn test_apply_self_update_linux_mock() {
         let temp_dir = std::env::temp_dir().join("prism_test_self_update");
         let _ = fs::remove_dir_all(&temp_dir);
