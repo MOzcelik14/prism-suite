@@ -1,4 +1,4 @@
-name: Release prisM. Suite
+name: Build & Release Multiplatform Packages
 
 on:
   push:
@@ -9,106 +9,158 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: prism-release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  build:
-    name: Build (${{ matrix.target }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            binary: prism
-            archive_ext: tar.gz
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            binary: prism.exe
-            archive_ext: zip
-
+  rust-tests:
+    name: Rust workspace tests
+    runs-on: ubuntu-22.04
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-
+      - uses: actions/checkout@v4
       - name: Install Linux build dependencies
-        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libasound2-dev
-
-      - name: Rust Cache
+      - name: Install stable Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache Cargo registry and target directory
         uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ matrix.target }}
+      - name: Run Rust workspace tests
+        run: cargo test --workspace --locked
 
-      - name: Compile release binary
-        run: cargo build --release --locked --target ${{ matrix.target }}
-        env:
-          PRISM_PUBLIC_KEY: ${{ secrets.PRISM_PUBLIC_KEY }}
-
-      - name: Package Linux release archive
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          PKG_NAME="prism-${VERSION}-linux-x86_64"
-          mkdir -p "staging/${PKG_NAME}"
-          cp "target/${{ matrix.target }}/release/${{ matrix.binary }}" "staging/${PKG_NAME}/"
-          cp README.md LICENSE "staging/${PKG_NAME}/"
-          cp -r assets "staging/${PKG_NAME}/"
-          tar -czf "${PKG_NAME}.tar.gz" -C staging "${PKG_NAME}"
-          mkdir -p artifacts
-          mv "${PKG_NAME}.tar.gz" artifacts/
-
-      - name: Package Windows release archive
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          PKG_NAME="prism-${VERSION}-windows-x86_64"
-          mkdir -p "staging/${PKG_NAME}"
-          cp "target/${{ matrix.target }}/release/${{ matrix.binary }}" "staging/${PKG_NAME}/"
-          cp README.md LICENSE "staging/${PKG_NAME}/"
-          cp -r assets "staging/${PKG_NAME}/"
-          7z a -tzip "${PKG_NAME}.zip" "./staging/${PKG_NAME}"
-          mkdir -p artifacts
-          mv "${PKG_NAME}.zip" artifacts/
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.target }}-archive
-          path: artifacts/*
-          if-no-files-found: error
-
-  publish-release:
-    name: Sign & Publish GitHub Release
-    needs: build
-    runs-on: ubuntu-latest
+  deb-appimage:
+    name: Ubuntu build (deb, AppImage, tar.gz)
+    needs: rust-tests
+    runs-on: ubuntu-22.04
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download all release artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: download
-
-      - name: Prepare release directory & calculate checksums
-        id: checksums
+      - uses: actions/checkout@v4
+      - name: Install packaging dependencies
         run: |
-          mkdir -p dist
-          find download/ -type f \( -name "*.tar.gz" -o -name "*.zip" \) -exec cp {} dist/ \;
-          cd dist
-          sha256sum *.tar.gz *.zip > SHA256SUMS
-          echo "Generated SHA256SUMS:"
-          cat SHA256SUMS
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config build-essential libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libasound2-dev \
+            curl file desktop-file-utils xvfb xauth libxcb-cursor0 libxkbcommon-x11-0 libegl1 mesa-utils ca-certificates python3
+      - name: Install stable Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache Cargo registry and target directory
+        uses: Swatinem/rust-cache@v2
+      - name: Build release binary
+        run: cargo build --locked --release -p prism-app
+      - name: Build Debian package
+        run: bash scripts/package-linux.sh deb
+      - name: Build AppImage
+        run: bash scripts/package-linux.sh appimage
+      - name: Build portable Linux tarball
+        run: bash scripts/package-linux.sh tarball
+      - name: Validate package outputs
+        run: |
+          test "$(find dist -name '*.deb' | wc -l)" -eq 1
+          test "$(find dist -name '*.AppImage' | wc -l)" -eq 1
+          test "$(find dist -name '*.tar.gz' | wc -l)" -eq 1
+          dpkg-deb -f dist/*.deb Package Version Architecture
+          test -x target/release/prism
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prism-ubuntu-packages
+          path: |
+            dist/*.deb
+            dist/*.AppImage
+            dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 30
 
+  rpm:
+    name: Fedora build (rpm)
+    needs: rust-tests
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install native build and packaging tools
+        run: |
+          dnf install -y git gcc gcc-c++ make pkgconf-pkg-config alsa-lib-devel libxcb-devel libxkbcommon-devel rpm-build curl ca-certificates python3 rust cargo
+      - uses: actions/checkout@v4
+      - name: Build release binary on Fedora
+        run: cargo build --locked --release -p prism-app
+      - name: Package RPM
+        run: bash scripts/package-linux.sh rpm
+      - name: Validate RPM
+        run: |
+          test "$(find dist -name '*.rpm' | wc -l)" -eq 1
+          rpm -qpl dist/*.rpm | grep -E '/usr/bin/prism$'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prism-fedora-package
+          path: dist/*.rpm
+          if-no-files-found: error
+          retention-days: 30
+
+  windows:
+    name: Windows build (zip MSVC)
+    needs: rust-tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install stable Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - name: Cache Cargo registry and target directory
+        uses: Swatinem/rust-cache@v2
+      - name: Build Windows binary
+        run: cargo build --locked --release -p prism-app
+      - name: Package Windows ZIP
+        shell: pwsh
+        run: |
+          $rawVer = "${{ github.ref_name }}"
+          if ([string]::IsNullOrEmpty($rawVer) -or $rawVer -notlike "v*") {
+            $ver = (Select-String -Path Cargo.toml -Pattern '^version\s*=\s*"([^"]+)"' | ForEach-Object { $_.Matches[0].Groups[1].Value } | Select-Object -First 1)
+          } else {
+            $ver = $rawVer.TrimStart('v')
+          }
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          $stage = Join-Path $env:TEMP "prism-stage"
+          if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
+          New-Item -ItemType Directory -Path $stage -Force | Out-Null
+          Copy-Item -Path "target\release\prism.exe" -Destination $stage -Force
+          Copy-Item -Path "assets" -Destination $stage -Recurse -Force
+          Copy-Item -Path "README.md" -Destination $stage -Force
+          Copy-Item -Path "LICENSE" -Destination $stage -Force
+          Compress-Archive -Path "$stage\*" -DestinationPath "dist\prism-$ver-windows-x86_64.zip" -Force
+          Remove-Item -Recurse -Force $stage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prism-windows-package
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    name: Publish GitHub Release
+    needs: [deb-appimage, rpm, windows]
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: prism-*-package*
+          merge-multiple: true
+          path: dist
+      - name: Verify package set and generate checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find dist -maxdepth 1 -name '*.deb' | wc -l)" -eq 1
+          test "$(find dist -maxdepth 1 -name '*.rpm' | wc -l)" -eq 1
+          test "$(find dist -maxdepth 1 -name '*.AppImage' | wc -l)" -eq 1
+          test "$(find dist -maxdepth 1 -name '*.tar.gz' | wc -l)" -eq 1
+          test "$(find dist -maxdepth 1 -name '*.zip' | wc -l)" -eq 1
+          (cd dist && sha256sum -- *.deb *.rpm *.AppImage *.tar.gz *.zip > SHA256SUMS.txt)
+          cat dist/SHA256SUMS.txt
       - name: Sign checksums with Minisign
         if: env.MINISIGN_KEY != ''
         env:
@@ -119,17 +171,21 @@ jobs:
           echo "$MINISIGN_KEY" > minisign.key
           cd dist
           if [ -n "$MINISIGN_PASSPHRASE" ]; then
-            echo "$MINISIGN_PASSPHRASE" | minisign -S -s ../minisign.key -m SHA256SUMS -x SHA256SUMS.sig
+            echo "$MINISIGN_PASSPHRASE" | minisign -S -s ../minisign.key -m SHA256SUMS.txt -x SHA256SUMS.sig
           else
-            minisign -S -s ../minisign.key -m SHA256SUMS -x SHA256SUMS.sig
+            minisign -S -s ../minisign.key -m SHA256SUMS.txt -x SHA256SUMS.sig
           fi
           rm -f ../minisign.key
-
-      - name: Create GitHub Release
+      - name: Create or update release with all packages
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/*
+            dist/*.deb
+            dist/*.rpm
+            dist/*.AppImage
+            dist/*.tar.gz
+            dist/*.zip
+            dist/SHA256SUMS.txt
+            dist/SHA256SUMS.sig
+          fail_on_unmatched_files: false
           generate_release_notes: true
-          draft: false
-          prerelease: false

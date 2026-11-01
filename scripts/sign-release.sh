@@ -23,16 +23,17 @@ echo "==> Generating SHA256SUMS..."
 cd "$TARGET_DIR"
 
 if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum *.tar.gz *.zip 2>/dev/null > SHA256SUMS || true
+    sha256sum -- *.deb *.rpm *.AppImage *.tar.gz *.zip 2>/dev/null > SHA256SUMS.txt || true
 elif command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 *.tar.gz *.zip 2>/dev/null > SHA256SUMS || true
+    shasum -a 256 *.deb *.rpm *.AppImage *.tar.gz *.zip 2>/dev/null > SHA256SUMS.txt || true
 else
     echo "Error: Neither sha256sum nor shasum is available." >&2
     exit 1
 fi
+cp SHA256SUMS.txt SHA256SUMS 2>/dev/null || true
 
-if [[ ! -s "SHA256SUMS" ]]; then
-    echo "Warning: No .tar.gz or .zip archive assets found in '$TARGET_DIR'." >&2
+if [[ ! -s "SHA256SUMS.txt" ]]; then
+    echo "Warning: No package assets found in '$TARGET_DIR'." >&2
     exit 1
 fi
 

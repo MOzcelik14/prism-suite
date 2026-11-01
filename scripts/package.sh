@@ -3,44 +3,55 @@
 # SPDX-License-Identifier: GPL-3.0-only
 #
 # Packages the prisM. Suite launcher into standardized release archives.
+# Usage: ./scripts/package.sh [format]
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-VERSION="${1:-$(grep '^version' "$ROOT_DIR/Cargo.toml" | head -n1 | cut -d '"' -f2)}"
+VERSION="${VERSION:-$(grep '^version' "$ROOT_DIR/Cargo.toml" | head -n1 | cut -d '"' -f2)}"
 DIST_DIR="$ROOT_DIR/dist"
+FORMAT="${1:-all}"
 
-echo "==> Packaging prisM. Suite v$VERSION"
+echo "==> Packaging prisM. Suite v$VERSION (target: $FORMAT)"
 mkdir -p "$DIST_DIR"
-
-# Build release binary
-echo "==> Building release binary with Cargo..."
-cargo build --release --manifest-path "$ROOT_DIR/Cargo.toml"
 
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 
 case "$OS" in
     Linux)
-        PKG_NAME="prism-${VERSION}-linux-${ARCH}"
-        PKG_DIR="$DIST_DIR/${PKG_NAME}"
-        rm -rf "$PKG_DIR"
-        mkdir -p "$PKG_DIR"
+        # Ensure release binary is compiled
+        if [[ ! -f "$ROOT_DIR/target/release/prism" ]]; then
+            echo "==> Building release binary with Cargo..."
+            cargo build --release --manifest-path "$ROOT_DIR/Cargo.toml" -p prism-app
+        fi
 
-        cp "$ROOT_DIR/target/release/prism" "$PKG_DIR/"
-        cp "$ROOT_DIR/README.md" "$PKG_DIR/"
-        cp "$ROOT_DIR/LICENSE" "$PKG_DIR/"
-        cp -r "$ROOT_DIR/assets" "$PKG_DIR/"
-
-        TAR_FILE="$DIST_DIR/${PKG_NAME}.tar.gz"
-        echo "==> Creating tarball $TAR_FILE..."
-        tar -czf "$TAR_FILE" -C "$DIST_DIR" "$PKG_NAME"
-        rm -rf "$PKG_DIR"
-        echo "==> Packaged: $TAR_FILE"
+        case "$FORMAT" in
+            deb|rpm|appimage|tarball)
+                bash "$SCRIPT_DIR/package-linux.sh" "$FORMAT"
+                ;;
+            all)
+                echo "==> Building standard Linux distribution formats..."
+                bash "$SCRIPT_DIR/package-linux.sh" tarball
+                if command -v dpkg-deb >/dev/null 2>&1; then
+                    bash "$SCRIPT_DIR/package-linux.sh" deb
+                fi
+                if command -v rpmbuild >/dev/null 2>&1; then
+                    bash "$SCRIPT_DIR/package-linux.sh" rpm
+                fi
+                ;;
+            *)
+                echo "Unknown format for Linux: $FORMAT (valid: deb, rpm, appimage, tarball, all)" >&2
+                exit 1
+                ;;
+        esac
         ;;
     MINGW*|MSYS*|CYGWIN*)
+        echo "==> Building release binary with Cargo..."
+        cargo build --release --manifest-path "$ROOT_DIR/Cargo.toml" -p prism-app
+
         PKG_NAME="prism-${VERSION}-windows-${ARCH}"
         PKG_DIR="$DIST_DIR/${PKG_NAME}"
         rm -rf "$PKG_DIR"
@@ -63,7 +74,9 @@ case "$OS" in
         ;;
 esac
 
-# Generate checksums
-"$SCRIPT_DIR/sign-release.sh" "$DIST_DIR" || true
+# Generate checksums if helper is present
+if [[ -f "$SCRIPT_DIR/sign-release.sh" ]]; then
+    "$SCRIPT_DIR/sign-release.sh" "$DIST_DIR" || true
+fi
 
-echo "==> Packaging completed successfully in $DIST_DIR"
+echo "==> Packaging finished in $DIST_DIR"

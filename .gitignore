@@ -1,5 +1,6 @@
 /target
 /dist
+/build
 **/*.rs.bk
 *.swp
 *.bak

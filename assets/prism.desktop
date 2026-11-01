@@ -1,0 +1,14 @@
+[Desktop Entry]
+Name=prisM. Suite
+GenericName=Creative Suite Launcher
+GenericName[tr]=Yaratıcı Yazılım Paketi Başlatıcı
+Comment=Unified desktop launcher, installer, and auto-updater for triM., steM., and beaM.
+Comment[tr]=triM., steM. ve beaM. için merkezi masaüstü başlatıcı ve güncelleme yöneticisi
+Exec=prism %F
+Icon=prism
+Terminal=false
+Type=Application
+Categories=Utility;Development;Graphics;AudioVideo;
+StartupNotify=true
+StartupWMClass=prism
+Keywords=launcher;updater;suite;creative;trim;stem;beam;store;

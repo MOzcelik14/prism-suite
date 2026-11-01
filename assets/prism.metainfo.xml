@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>prism.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <name>prisM. Suite</name>
+  <summary>Unified desktop launcher and package manager for the prisM creative suite</summary>
+  <description>
+    <p>
+      prisM. Suite is a native desktop launcher, package manager, and auto-updater for
+      triM. (video editor), steM. (audio workstation), and beaM. (RAW photo editor).
+    </p>
+    <ul>
+      <li>Automated release discovery and cryptographically verified installations</li>
+      <li>Instant zero-downtime rollbacks via atomic version switching</li>
+      <li>Automatic synchronization of desktop preferences and interface language</li>
+      <li>Direct launch management with isolated process group lifecycle control</li>
+    </ul>
+  </description>
+  <developer id="mozcelik14">
+    <name>Murat Özçelik</name>
+  </developer>
+  <launchable type="desktop-id">prism.desktop</launchable>
+  <url type="homepage">https://github.com/MOzcelik14/prism-suite</url>
+  <url type="bugtracker">https://github.com/MOzcelik14/prism-suite/issues</url>
+  <url type="vcs-browser">https://github.com/MOzcelik14/prism-suite</url>
+  <releases>
+    <release version="0.1.0" date="2026-11-01"/>
+  </releases>
+  <content_rating type="oars-1.1" />
+</component>

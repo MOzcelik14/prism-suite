@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="prisM. Suite logo" width="220" />
+  <img src="assets/logo.png" alt="prisM. Suite logo" width="200" />
 </p>
 
 # prisM. Suite
@@ -8,48 +8,86 @@
 [![Release](https://github.com/MOzcelik14/prism-suite/actions/workflows/release.yml/badge.svg)](https://github.com/MOzcelik14/prism-suite/actions/workflows/release.yml)
 [![License: GPL-3.0-only](https://img.shields.io/badge/License-GPL--3.0--only-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Rust](https://img.shields.io/badge/rust-stable-brightgreen.svg)](https://www.rust-lang.org)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey.svg)]()
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey.svg)](https://github.com/MOzcelik14/prism-suite/releases)
 
-**prisM. Suite** is a unified desktop launcher, installer, and auto-updater for a creative desktop software suite:
-- **[triM.](https://github.com/MOzcelik14/triM)** — Precision non-linear video editing for desktop
-- **[steM.](https://github.com/MOzcelik14/steM)** — Multitrack audio workstation & precision waveform editor
-- **[beaM.](https://github.com/MOzcelik14/beaM)** — Creative photo editing & raster design studio
+prisM. Suite is a native desktop launcher, package manager, and auto-updater for creative desktop applications:
 
-Target platforms: **Linux** (`x86_64`) and **Windows** (`x86_64`).
+- **[triM.](https://github.com/MOzcelik14/triM)**: Non-linear multi-track video editor.
+- **[steM.](https://github.com/MOzcelik14/steM)**: Multitrack audio workstation and waveform editor.
+- **[beaM.](https://github.com/MOzcelik14/beaM)**: Non-destructive RAW photo editor and image studio.
 
----
-
-## 🎨 Branding & Identity
-
-- **Suite Display Name**: `prisM. Suite` (used in window titles, installer, about dialog, documentation).
-- **Launcher Compact Name**: `prisM.` (used in taskbars, system tray, desktop shortcuts).
-- **Creative Apps**: `triM.`, `steM.`, `beaM.` (always resolved dynamically from the embedded catalog).
-- **Visual Motif**: Deep obsidian (`#0e131f`) and slate dark theme with signature colored vector icons, bold capital "M", and trailing dot.
+Supported platforms: **Linux** (x86_64) and **Windows** (x86_64).
 
 ---
 
-## 🏗️ Architecture & Member Crates
+## Downloads & Installation
 
-The project is structured as a modular Cargo workspace with zero circular dependencies:
+Pre-compiled binary releases are available on the [Releases](https://github.com/MOzcelik14/prism-suite/releases) page.
+
+| Platform | Package Format | File Name | Notes |
+| :--- | :--- | :--- | :--- |
+| Debian / Ubuntu | DEB | `prism_<version>_amd64.deb` | Standard system package |
+| Fedora / RHEL | RPM | `prism-<version>-1.x86_64.rpm` | Standard system package |
+| Linux (Generic) | AppImage | `prism-<version>-x86_64.AppImage` | Standalone portable executable |
+| Linux (Generic) | Tarball | `prism-<version>-linux-x86_64.tar.gz` | Portable archive |
+| Windows | ZIP | `prism-<version>-windows-x86_64.zip` | Portable archive with `prism.exe` |
+
+### Debian / Ubuntu (.deb)
+
+```bash
+sudo dpkg -i prism_<version>_amd64.deb
+sudo apt-get install -f
+```
+
+### Fedora / RHEL (.rpm)
+
+```bash
+sudo dnf install ./prism-<version>-1.x86_64.rpm
+```
+
+### Generic Linux (.AppImage)
+
+```bash
+chmod +x prism-<version>-x86_64.AppImage
+./prism-<version>-x86_64.AppImage
+```
+
+---
+
+## Technical Overview
+
+### Security and Release Integrity
+- **Ed25519 & Minisign Signatures**: Release manifests are verified against `SHA256SUMS` and detached Minisign signatures prior to unpacking.
+- **Archive Sanitization**: Archive unpacking rejects path traversal attempts (`../`), absolute targets, and symlink escapes outside the target destination.
+- **Memory-Safe Network Layer**: Built on `reqwest` with `rustls-tls` to avoid external OpenSSL runtime dependencies.
+
+### Installation Lifecycle
+- **Atomic Updates & Instant Rollbacks**: Applications are deployed via atomic symlinks on Linux and directory junctions on Windows (`versions/<version>/` linked to `current`). Prior versions are retained for one-click rollbacks.
+- **Detached Process Management**: Managed applications launch in independent process groups (`setsid` on Linux, detached process creation flags on Windows), remaining active across launcher shutdowns.
+- **Desktop Integration**: Installs FreeDesktop `.desktop` entries in `~/.local/share/applications/` on Linux and shortcuts on Windows.
+- **Language Synchronization**: Manages `<config>/prism/shared.ron` to synchronize user language preferences (English and Turkish) across the entire suite.
+
+---
+
+## Workspace Structure
 
 ```
 prism-suite/
 ├── crates/
-│   ├── prism-app/       # GUI front-end built on egui/eframe 0.29 (native look, dark theme, vector logos)
-│   ├── prism-core/      # Domain models, embedded RON catalog, configuration, shared preferences, semver state
-│   ├── prism-net/       # HTTP release discovery, chunked streaming, disk caching, Ed25519 & SHA-256 verifier
-│   ├── prism-install/   # Atomic symlink management, archive extraction, desktop shortcuts, detached process runner
-│   └── prism-i18n/      # Fluent localization (English & Turkish) with 100% key parity & Turkish character safety
-├── docs/
-│   ├── release-format.md    # Release contract specification, archive conventions & signatures
-│   ├── shared-preferences.md# Specification for <config>/prism/shared.ron suite synchronization
-│   └── signing.md           # Minisign / Ed25519 signing guide and GitHub Actions secret setup
+│   ├── prism-app/       # GUI front-end built on egui and eframe 0.29
+│   ├── prism-core/      # Catalog, application models, state, and shared preferences
+│   ├── prism-net/       # HTTP release discovery, streaming downloads, hash and signature verifier
+│   ├── prism-install/   # Symlinks, archive extraction, desktop entries, process supervisor
+│   └── prism-i18n/      # Fluent localization bundles (English and Turkish)
+├── assets/              # Desktop integration files, vector logos, and raster icon set
+├── docs/                # Architecture specifications, signing guide, and release format
 ├── scripts/
-│   ├── package.sh       # Release packaging script for Linux and Windows archives
-│   └── sign-release.sh  # Manifest generation and Minisign signature script
+│   ├── package-linux.sh # Linux packaging script (deb, rpm, appimage, tarball)
+│   ├── package.sh       # Release packaging frontend
+│   └── sign-release.sh  # Checksum computation and Minisign signing script
 ├── .github/workflows/
-│   ├── ci.yml           # Automated testing, Clippy lints, and format checking on Linux & Windows
-│   └── release.yml      # Automated matrix release build, checksumming, Minisign signing & GitHub Release
+│   ├── ci.yml           # Continuous integration (tests, clippy, formatting)
+│   └── release.yml      # Multiplatform release matrix (deb, rpm, appimage, zip)
 ├── Cargo.toml
 ├── LICENSE
 └── README.md
@@ -57,92 +95,66 @@ prism-suite/
 
 ---
 
-## 🛡️ Core Engineering Rules & Security
-
-1. **Cryptographic Release Verification**:
-   - Every downloaded archive is verified against `SHA256SUMS` and its detached Minisign signature (`SHA256SUMS.sig`) before unpacking.
-   - Powered by `ed25519-dalek` and `sha2`.
-   - Rejects corrupted downloads, hash mismatches, and tampered archives immediately.
-2. **Path Traversal & Archive Hardening**:
-   - Archive extraction explicitly sanitizes every entry path. Rejects relative directory traversal (`../`), absolute paths, and symlink escapes outside the target directory.
-3. **Zero OpenSSL**:
-   - Uses `reqwest` exclusively with `rustls-tls` to eliminate OpenSSL runtime linking and vulnerability issues.
-4. **Atomic Installations & Instant Rollbacks**:
-   - Uses atomic symlinks on Linux (`current.tmp` -> `rename`) and directory junction links on Windows.
-   - Applications retain previous versions (`versions/<version>/`) allowing one-click rollback to the prior release with zero downtime.
-   - Automatic version pruning keeps the last *N* versions configured by the user (default: 2, range: 1–5).
-5. **Detached Process Management**:
-   - Applications launch in their own detached process groups (`setsid` on Unix, creation flags on Windows) so they survive launcher shutdown.
-   - Running state detection prevents updating, rolling back, or uninstalling active processes.
-6. **Desktop Integration**:
-   - Automatically installs and cleans up standard FreeDesktop `.desktop` entries in `~/.local/share/applications/` on Linux and shortcuts on Windows.
-7. **Suite Preferences Synchronization**:
-   - Maintains `<config>/prism/shared.ron` containing UI language and launcher version.
-   - Child apps ([`triM.`](https://github.com/MOzcelik14/triM), [`steM.`](https://github.com/MOzcelik14/steM), [`beaM.`](https://github.com/MOzcelik14/beaM)) read this file on startup to synchronize their language automatically.
-8. **Launcher Self-Update**:
-   - Checks for updates to `prisM. Suite` itself against GitHub releases.
-   - Linux: Atomic executable replacement (`current_exe -> current_exe.old -> new_exe -> current_exe`).
-   - Windows: Detached helper script replaces the locked binary after process exit and relaunches.
-9. **"What's New" Aggregated Release Feed**:
-   - Dedicated feed rendering markdown release notes across all installed apps and the launcher in reverse chronological order.
-10. **Localization & Full Turkish Character Safety**:
-    - Fluent bundles for English (`en.ftl`) and Turkish (`tr.ftl`).
-    - Automated tests enforce 100% key parity between locales.
-    - Full support for Latin Extended-A characters (`ç, ğ, ı, İ, ö, ş, ü`) with zero naive uppercase/lowercase conversion bugs.
-
----
-
-## 🚀 Building & Running
+## Building from Source
 
 ### Prerequisites
-- **Rust**: Stable 1.80+ (recommended: `rustup default stable`).
-- **Linux Build Dependencies**:
+- Rust stable toolchain (1.80 or newer):
+  ```bash
+  rustup default stable
+  ```
+- Linux development dependencies:
   ```bash
   sudo apt-get install -y libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libasound2-dev
   ```
 
-### Build and Run Launcher
+### Build Commands
+
 ```bash
-# Debug run
+# Debug build
 cargo run -p prism-app
 
-# Optimized release run
-cargo run --release -p prism-app
+# Release build
+cargo build --release -p prism-app
 ```
 
-### Running Tests & Quality Checks
+The resulting executable will be located at `target/release/prism` (or `target/release/prism.exe` on Windows).
+
+### Tests and Quality Checks
+
 ```bash
-# Run all workspace unit and integration tests
+# Workspace unit and integration tests
 cargo test --workspace
 
-# Strict zero-warning linting
+# Linting with Clippy
 cargo clippy --workspace --all-targets -- -D warnings
 
-# Formatting check
+# Format check
 cargo fmt --check
 ```
 
 ---
 
-## 📦 Packaging & Signing Releases
+## Packaging
 
-### Local Packaging
+To produce distribution packages locally:
+
 ```bash
-# Package archives for current platform into dist/
-./scripts/package.sh
+# Linux (builds tarball and deb/rpm if packaging utilities are available)
+./scripts/package.sh all
+
+# Build specific package format
+./scripts/package-linux.sh deb
+./scripts/package-linux.sh rpm
+./scripts/package-linux.sh appimage
+./scripts/package-linux.sh tarball
 ```
 
-### Signing Release Assets
-```bash
-# Computes SHA256SUMS and signs with Minisign
-./scripts/sign-release.sh dist/ path/to/prism.key
-```
-
-See [`docs/signing.md`](docs/signing.md) for detailed key generation and GitHub Actions setup instructions.
+Release packages are placed into the `dist/` directory.
 
 ---
 
-## 📄 License
+## License
 
-This project is licensed under the **GNU General Public License v3.0 (GPL-3.0-only)**.
-Copyright © 2026 Murat Özçelik. All rights reserved.
+GNU General Public License v3.0 (GPL-3.0-only). See [LICENSE](LICENSE) for details.
+
+Copyright (C) 2026 Murat Özçelik.
