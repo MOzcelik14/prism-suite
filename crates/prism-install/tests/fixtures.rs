@@ -205,3 +205,45 @@ fn test_fixture_6_rollback() {
 
     let _ = fs::remove_dir_all(&test_dir);
 }
+
+#[test]
+fn test_fixture_7_update_over_legacy_directory() {
+    let test_dir = create_test_dir("legacy_directory");
+    let mgr = InstallationManager::new(Some(test_dir.clone()));
+    let catalog = AppCatalog::load_embedded();
+    let stem = catalog.get(AppId::Stem).unwrap();
+
+    // Simulate legacy state: apps/stem/current is an actual directory containing old files
+    let app_dir = mgr.app_dir(stem).unwrap();
+    let current_dir = app_dir.join("current");
+    fs::create_dir_all(&current_dir).unwrap();
+    fs::write(current_dir.join("version.txt"), "0.1.0").unwrap();
+    fs::write(current_dir.join("stem"), b"#!/bin/sh\necho stem 0.1.0\n").unwrap();
+
+    // Verify initial detection
+    assert_eq!(mgr.detect_state(stem).installed_version(), Some("0.1.0"));
+
+    // Now install update 0.1.1 over the legacy directory
+    let archive_v2 = create_valid_tar_gz("stem", "0.1.1");
+    mgr.install_package(stem, "0.1.1", "stem-0.1.1.tar.gz", &archive_v2, 3)
+        .expect("Updating over legacy directory must succeed without EISDIR");
+
+    // Verify new state
+    assert_eq!(mgr.detect_state(stem).installed_version(), Some("0.1.1"));
+    assert_eq!(mgr.detect_previous_version(stem), Some("0.1.0".to_string()));
+
+    // Verify current is now a symlink (or junction) pointing to versions/0.1.1
+    let cur_link = mgr.current_link_path(stem).unwrap();
+    let meta = fs::symlink_metadata(&cur_link).unwrap();
+    #[cfg(unix)]
+    assert!(meta.file_type().is_symlink());
+
+    // Verify rollback works back to 0.1.0
+    let restored = mgr
+        .rollback(stem)
+        .expect("Rollback should restore legacy migrated version");
+    assert_eq!(restored, "0.1.0");
+    assert_eq!(mgr.detect_state(stem).installed_version(), Some("0.1.0"));
+
+    let _ = fs::remove_dir_all(&test_dir);
+}

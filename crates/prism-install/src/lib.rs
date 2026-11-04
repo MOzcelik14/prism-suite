@@ -223,11 +223,32 @@ impl InstallationManager {
         let current_link = self.current_link_path(app)?;
         let previous_link = self.previous_link_path(app)?;
 
-        if current_link.exists() {
+        if current_link.exists() || fs::symlink_metadata(&current_link).is_ok() {
             if let Ok(existing_target) = fs::read_link(&current_link) {
                 if existing_target != target_version_dir {
-                    let _ = fs::remove_file(&previous_link);
+                    let _ = remove_link_or_dir(&previous_link);
                     create_symlink(&existing_target, &previous_link)?;
+                }
+            } else if let Ok(meta) = fs::symlink_metadata(&current_link) {
+                if meta.is_dir() && !meta.file_type().is_symlink() {
+                    // Legacy migration: `current` was a real directory instead of a symlink
+                    let old_version = if current_link.join("version.txt").exists() {
+                        fs::read_to_string(current_link.join("version.txt"))
+                            .map(|s| s.trim().to_string())
+                            .unwrap_or_else(|_| "0.1.0".to_string())
+                    } else {
+                        "0.1.0".to_string()
+                    };
+                    let old_version_dir = self.version_dir(app, &old_version)?;
+                    if !old_version_dir.exists() {
+                        let _ = fs::rename(&current_link, &old_version_dir);
+                    } else {
+                        let _ = fs::remove_dir_all(&current_link);
+                    }
+                    if old_version_dir.exists() && old_version_dir != target_version_dir {
+                        let _ = remove_link_or_dir(&previous_link);
+                        let _ = create_symlink(&old_version_dir, &previous_link);
+                    }
                 }
             }
         }
@@ -257,15 +278,20 @@ impl InstallationManager {
         #[cfg(unix)]
         {
             let temp_link = self.app_dir(app)?.join("current.tmp");
-            let _ = fs::remove_file(&temp_link);
+            let _ = remove_link_or_dir(&temp_link);
             std::os::unix::fs::symlink(target_version_dir, &temp_link)?;
+            if let Ok(meta) = fs::symlink_metadata(&current_link) {
+                if meta.is_dir() && !meta.file_type().is_symlink() {
+                    let _ = fs::remove_dir_all(&current_link);
+                }
+            }
             fs::rename(&temp_link, &current_link)?;
         }
 
         #[cfg(windows)]
         {
-            if current_link.exists() {
-                let _ = fs::remove_dir_all(&current_link);
+            if current_link.exists() || fs::symlink_metadata(&current_link).is_ok() {
+                let _ = remove_link_or_dir(&current_link);
             }
             let _ = std::os::windows::fs::symlink_dir(target_version_dir, &current_link);
         }
@@ -328,7 +354,7 @@ impl InstallationManager {
             .to_string();
 
         self.switch_current_link(app, &target)?;
-        let _ = fs::remove_file(&prev_link);
+        let _ = remove_link_or_dir(&prev_link);
 
         // Update desktop integration to point to active executable
         if let Ok(bin_path) = self.app_binary_path(app) {
@@ -478,6 +504,17 @@ fn find_binary_recursive(dir: &Path, binary_name: &str, depth: usize) -> Option<
         }
     }
     None
+}
+
+pub(crate) fn remove_link_or_dir(path: &Path) -> std::io::Result<()> {
+    if let Ok(meta) = fs::symlink_metadata(path) {
+        if meta.file_type().is_symlink() || meta.is_file() {
+            fs::remove_file(path)?;
+        } else if meta.is_dir() {
+            fs::remove_dir_all(path)?;
+        }
+    }
+    Ok(())
 }
 
 fn create_symlink(target: &Path, link: &Path) -> std::io::Result<()> {
