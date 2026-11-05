@@ -131,3 +131,26 @@ status-up-to-date = YÜKLÜ · GÜNCEL
 compare-trim = Adobe Premiere Pro® alternatifi
 compare-stem = Audacity & Reaper alternatifi
 compare-beam = Adobe Lightroom® alternatifi
+
+# Categories
+category-trim = Video Düzenleyici
+category-stem = Ses Çalışma İstasyonu
+category-beam = RAW Fotoğraf Düzenleyici
+
+# Status & Badges
+home-all-up-to-date = Tüm Sistemler Güncel
+filter-no-results = Bu filtreye uygun uygulama bulunamadı.
+footer-open-source-note = — Tüm uygulamalar açık kaynaklı, bağımsız ve yerel araçlardır.
+footer-github-org = GitHub Kuruluşu ↗
+version-current = Sürüm { $version } · Güncel
+version-installed = Sürüm { $version } Kurulu
+version-new-available = Yeni Sürüm: { $version }
+status-error-msg = Hata: { $message }
+version-available-badge = v{ $version } Mevcut
+version-installed-badge = v{ $version } Kurulu
+version-update-badge = v{ $version } Güncelleme
+tooltip-open-github = { $app } GitHub sayfasını tarayıcıda aç
+whats-new-subtitle = Tüm paket uygulamalarındaki son sürüm notları ve geliştirmeler
+about-launcher-repo = GitHub Deposu
+about-org-repo = Creative Suite Organizasyonu
+settings-current-dir = Mevcut: { $dir }

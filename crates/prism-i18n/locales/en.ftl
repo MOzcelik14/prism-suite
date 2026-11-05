@@ -131,3 +131,26 @@ status-up-to-date = INSTALLED · UP TO DATE
 compare-trim = Like Adobe Premiere Pro®
 compare-stem = Like Audacity & Reaper
 compare-beam = Like Adobe Lightroom®
+
+# Categories
+category-trim = Video Editor
+category-stem = Audio Workstation
+category-beam = RAW Photo Editor
+
+# Status & Badges
+home-all-up-to-date = All Systems Up to Date
+filter-no-results = No applications match the selected filter.
+footer-open-source-note = — All applications are open-source, standalone, and native desktop tools.
+footer-github-org = GitHub Organization ↗
+version-current = Version { $version } · Up to date
+version-installed = Version { $version } Installed
+version-new-available = New Version: { $version }
+status-error-msg = Error: { $message }
+version-available-badge = v{ $version } Available
+version-installed-badge = v{ $version } Installed
+version-update-badge = v{ $version } Update
+tooltip-open-github = Open { $app } GitHub repository in browser
+whats-new-subtitle = Latest release notes and improvements across all suite applications
+about-launcher-repo = GitHub Repository
+about-org-repo = Creative Suite Organization
+settings-current-dir = Current: { $dir }

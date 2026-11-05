@@ -50,10 +50,69 @@ fn main() -> eframe::Result<()> {
 }
 
 fn configure_fonts(ctx: &egui::Context) {
-    let fonts = egui::FontDefinitions::default();
+    let mut fonts = egui::FontDefinitions::default();
 
-    // Default proportional fonts in egui 0.29 have complete Latin Extended-A coverage.
-    // If needed, custom font families can be prepended here.
+    // 1. Embed DejaVu Sans for complete Turkish glyph coverage (ç ğ ı İ ö ş ü Ç Ğ Ö Ş Ü)
+    //    and Unicode symbols (✓, ●, —, •, ↗, ↩, ⚙, ⬆, etc.).
+    const DEJAVU_SANS: &[u8] = include_bytes!("../../../assets/fonts/DejaVuSans.ttf");
+    fonts.font_data.insert(
+        "dejavu_sans".to_owned(),
+        egui::FontData::from_static(DEJAVU_SANS),
+    );
+
+    // 2. Scan and load any available system symbol / fallback fonts
+    let candidate_system_fonts = [
+        "/usr/share/fonts/truetype/noto/NotoSansSymbols-Regular.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSansSymbols2-Regular.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+        "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf",
+        "C:\\Windows\\Fonts\\segoeui.ttf",
+        "C:\\Windows\\Fonts\\seguiemj.ttf",
+        "C:\\Windows\\Fonts\\arial.ttf",
+        "/System/Library/Fonts/SFNS.ttf",
+        "/Library/Fonts/Arial Unicode.ttf",
+    ];
+
+    for (idx, path) in candidate_system_fonts.iter().enumerate() {
+        if let Ok(data) = std::fs::read(path) {
+            let name = format!("sys_font_{}", idx);
+            fonts
+                .font_data
+                .insert(name.clone(), egui::FontData::from_owned(data));
+            fonts
+                .families
+                .entry(egui::FontFamily::Proportional)
+                .or_default()
+                .push(name.clone());
+            fonts
+                .families
+                .entry(egui::FontFamily::Monospace)
+                .or_default()
+                .push(name);
+        }
+    }
+
+    // 3. Make DejaVu Sans the primary proportional font
+    fonts
+        .families
+        .entry(egui::FontFamily::Proportional)
+        .or_default()
+        .insert(0, "dejavu_sans".to_owned());
+
+    // 4. Ensure Hack is also in proportional fallback chain so monospace symbols (e.g. ●) are available
+    fonts
+        .families
+        .entry(egui::FontFamily::Proportional)
+        .or_default()
+        .push("Hack".to_owned());
+
+    // 5. Add DejaVu Sans to monospace fallback as well
+    fonts
+        .families
+        .entry(egui::FontFamily::Monospace)
+        .or_default()
+        .push("dejavu_sans".to_owned());
+
     ctx.set_fonts(fonts);
 }
 

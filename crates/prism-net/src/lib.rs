@@ -218,7 +218,7 @@ impl NetworkClient {
             version: semver::Version::new(0, 1, 0),
             tag_name: "v0.1.0".to_string(),
             release_name: format!("{} v0.1.0", app.display_name),
-            release_notes: format!("{} v0.1.0 sürümü.", app.display_name),
+            release_notes: format!("{} v0.1.0 release.", app.display_name),
             is_prerelease: false,
             asset_filename: format!(
                 "{}-0.1.0-{}-{}.tar.gz",

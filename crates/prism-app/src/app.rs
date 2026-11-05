@@ -987,7 +987,12 @@ impl eframe::App for PrismApp {
                     )
                     .show(ctx, |ui| {
                         ui.horizontal(|ui| {
-                            ui.label(RichText::new("✨").size(15.0_f32));
+                            ui.label(
+                                RichText::new("✦")
+                                    .size(15.0_f32)
+                                    .strong()
+                                    .color(ACCENT_CYAN),
+                            );
                             ui.label(
                                 RichText::new(self.i18n.text_with_arg(
                                     "banner-update-available",
@@ -1102,7 +1107,7 @@ impl eframe::App for PrismApp {
                         ui.label(RichText::new("•").size(11.0_f32).color(TEXT_MUTED));
                         if ui
                             .hyperlink_to(
-                                RichText::new("GitHub Kuruluşu ↗")
+                                RichText::new(self.i18n.text("footer-github-org"))
                                     .size(11.0_f32)
                                     .color(TEXT_MUTED),
                                 "https://github.com/MOzcelik14",
@@ -1183,7 +1188,7 @@ impl eframe::App for PrismApp {
                                         }
                                     } else {
                                         ui.label(
-                                            RichText::new("Tüm Sistemler Güncel")
+                                            RichText::new(self.i18n.text("home-all-up-to-date"))
                                                 .size(11.5_f32)
                                                 .color(TEXT_MUTED),
                                         );
@@ -1224,7 +1229,7 @@ impl eframe::App for PrismApp {
                                 ui.add_space(40.0_f32);
                                 ui.vertical_centered(|ui| {
                                     ui.label(
-                                        RichText::new("Bu filtreye uygun uygulama bulunamadı.")
+                                        RichText::new(self.i18n.text("filter-no-results"))
                                             .size(13.5_f32)
                                             .color(TEXT_MUTED),
                                     );
@@ -1290,20 +1295,24 @@ impl eframe::App for PrismApp {
                                         );
                                         ui.label(
                                             RichText::new(
-                                                "— Tüm uygulamalar açık kaynaklı, bağımsız ve yerel araçlardır.",
+                                                self.i18n.text("footer-open-source-note"),
                                             )
                                             .size(12.0_f32)
                                             .color(TEXT_MUTED),
                                         );
-                                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                            if ui
-                                                .hyperlink_to(
-                                                    "GitHub Kuruluşu ↗",
-                                                    "https://github.com/MOzcelik14",
-                                                )
-                                                .clicked()
-                                            {}
-                                        });
+                                        ui.with_layout(
+                                            Layout::right_to_left(Align::Center),
+                                            |ui| {
+                                                if ui
+                                                    .hyperlink_to(
+                                                        self.i18n.text("footer-github-org"),
+                                                        "https://github.com/MOzcelik14",
+                                                    )
+                                                    .clicked()
+                                                {
+                                                }
+                                            },
+                                        );
                                     });
                                 });
                         });
@@ -1493,9 +1502,9 @@ impl PrismApp {
                                 );
 
                                 let cat_name = match app.id {
-                                    AppId::Trim => "Video Düzenleyici",
-                                    AppId::Stem => "Ses Çalışma İstasyonu",
-                                    AppId::Beam => "RAW Fotoğraf Düzenleyici",
+                                    AppId::Trim => self.i18n.text("category-trim"),
+                                    AppId::Stem => self.i18n.text("category-stem"),
+                                    AppId::Beam => self.i18n.text("category-beam"),
                                 };
                                 ui.label(RichText::new(cat_name).size(12.0_f32).color(TEXT_MUTED));
 
@@ -1526,25 +1535,39 @@ impl PrismApp {
                         let version_str = match &current_state {
                             AppInstallState::NotInstalled { latest_release } => {
                                 if let Some(r) = latest_release {
-                                    format!("Sürüm {} · Güncel", r.version)
+                                    self.i18n.text_with_arg(
+                                        "version-current",
+                                        "version",
+                                        &r.version.to_string(),
+                                    )
                                 } else {
-                                    "Aktif Geliştirme Aşamasında".to_string()
+                                    self.i18n.text("status-in-development")
                                 }
                             }
                             AppInstallState::NoReleaseAvailable => {
-                                "Aktif Geliştirme Aşamasında".to_string()
+                                self.i18n.text("status-in-development")
                             }
                             AppInstallState::Installed { version, .. } => {
-                                format!("Sürüm {} Kurulu", version)
+                                self.i18n
+                                    .text_with_arg("version-installed", "version", version)
                             }
                             AppInstallState::UpdateAvailable { latest_release, .. } => {
-                                format!("Yeni Sürüm: {}", latest_release.version)
+                                self.i18n.text_with_arg(
+                                    "version-new-available",
+                                    "version",
+                                    &latest_release.version.to_string(),
+                                )
                             }
-                            AppInstallState::Downloading { .. } => "İndiriliyor...".to_string(),
-                            AppInstallState::Verifying => "Doğrulanıyor...".to_string(),
-                            AppInstallState::Installing => "Kuruluyor...".to_string(),
-                            AppInstallState::Running => "Çalışıyor".to_string(),
-                            AppInstallState::Error { message } => format!("Hata: {}", message),
+                            AppInstallState::Downloading { .. } => {
+                                self.i18n.text("status-downloading")
+                            }
+                            AppInstallState::Verifying => self.i18n.text("status-verifying"),
+                            AppInstallState::Installing => self.i18n.text("status-installing"),
+                            AppInstallState::Running => self.i18n.text("status-running"),
+                            AppInstallState::Error { message } => {
+                                self.i18n
+                                    .text_with_arg("status-error-msg", "message", message)
+                            }
                         };
 
                         ui.label(RichText::new(version_str).size(11.5_f32).color(TEXT_MUTED));
@@ -1758,7 +1781,7 @@ impl PrismApp {
                     .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
                     .show(ui, |ui| {
                         ui.label(
-                            RichText::new("● Çalışıyor")
+                            RichText::new(format!("● {}", self.i18n.text("status-running")))
                                 .size(10.0_f32)
                                 .strong()
                                 .color(ACCENT_EMERALD),
@@ -1819,9 +1842,10 @@ impl PrismApp {
 
                     if ui
                         .add(repo_btn)
-                        .on_hover_text(format!(
-                            "{} GitHub sayfasını tarayıcıda aç",
-                            app.display_name
+                        .on_hover_text(self.i18n.text_with_arg(
+                            "tooltip-open-github",
+                            "app",
+                            &app.display_name,
                         ))
                         .clicked()
                     {
@@ -1843,9 +1867,10 @@ impl PrismApp {
 
                 if ui
                     .add(repo_btn)
-                    .on_hover_text(format!(
-                        "{} GitHub sayfasını tarayıcıda aç",
-                        app.display_name
+                    .on_hover_text(self.i18n.text_with_arg(
+                        "tooltip-open-github",
+                        "app",
+                        &app.display_name,
                     ))
                     .clicked()
                 {
@@ -1885,7 +1910,7 @@ impl PrismApp {
             }
             AppInstallState::Running => {
                 let running_label = Button::new(
-                    RichText::new("● Çalışıyor")
+                    RichText::new(format!("● {}", self.i18n.text("status-running")))
                         .size(12.5_f32)
                         .color(ACCENT_CYAN),
                 )
@@ -1924,10 +1949,14 @@ impl PrismApp {
                         .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
                         .show(ui, |ui| {
                             ui.label(
-                                RichText::new(format!("v{} Mevcut", r.version))
-                                    .size(10.5_f32)
-                                    .strong()
-                                    .color(ACCENT_CYAN),
+                                RichText::new(self.i18n.text_with_arg(
+                                    "version-available-badge",
+                                    "version",
+                                    &r.version.to_string(),
+                                ))
+                                .size(10.5_f32)
+                                .strong()
+                                .color(ACCENT_CYAN),
                             );
                         });
                 } else {
@@ -1970,10 +1999,17 @@ impl PrismApp {
                     .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
                     .show(ui, |ui| {
                         ui.label(
-                            RichText::new(format!("✓ v{} Yüklü", version))
-                                .size(10.5_f32)
-                                .strong()
-                                .color(ACCENT_EMERALD),
+                            RichText::new(format!(
+                                "✓ {}",
+                                self.i18n.text_with_arg(
+                                    "version-installed-badge",
+                                    "version",
+                                    version,
+                                )
+                            ))
+                            .size(10.5_f32)
+                            .strong()
+                            .color(ACCENT_EMERALD),
                         );
                     });
             }
@@ -1985,10 +2021,17 @@ impl PrismApp {
                     .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
                     .show(ui, |ui| {
                         ui.label(
-                            RichText::new(format!("⬆ v{} Güncelleme", latest_release.version))
-                                .size(10.5_f32)
-                                .strong()
-                                .color(ACCENT_AMBER),
+                            RichText::new(format!(
+                                "⬆ {}",
+                                self.i18n.text_with_arg(
+                                    "version-update-badge",
+                                    "version",
+                                    &latest_release.version.to_string(),
+                                )
+                            ))
+                            .size(10.5_f32)
+                            .strong()
+                            .color(ACCENT_AMBER),
                         );
                     });
             }
@@ -2048,7 +2091,7 @@ impl PrismApp {
                     .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
                     .show(ui, |ui| {
                         ui.label(
-                            RichText::new("● Çalışıyor")
+                            RichText::new(format!("● {}", self.i18n.text("status-running")))
                                 .size(10.5_f32)
                                 .strong()
                                 .color(ACCENT_EMERALD),
@@ -2123,9 +2166,10 @@ impl PrismApp {
 
                 if ui
                     .add(repo_btn)
-                    .on_hover_text(format!(
-                        "{} GitHub sayfasını tarayıcıda aç",
-                        app.display_name
+                    .on_hover_text(self.i18n.text_with_arg(
+                        "tooltip-open-github",
+                        "app",
+                        &app.display_name,
                     ))
                     .clicked()
                 {
@@ -2211,7 +2255,7 @@ impl PrismApp {
                 }
             }
             AppInstallState::Verifying | AppInstallState::Installing => {
-                ui.label(RichText::new("⏳").size(16.0_f32));
+                ui.add(egui::Spinner::new().size(16.0_f32));
             }
             AppInstallState::Running => {
                 let running_label = Button::new(
@@ -2722,9 +2766,12 @@ impl PrismApp {
                     .unwrap_or_else(|_| "Default system app data directory".to_string());
 
                 ui.label(
-                    RichText::new(format!("Current: {}", dir_str))
-                        .size(12.0_f32)
-                        .color(TEXT_MUTED),
+                    RichText::new(
+                        self.i18n
+                            .text_with_arg("settings-current-dir", "dir", &dir_str),
+                    )
+                    .size(12.0_f32)
+                    .color(TEXT_MUTED),
                 );
                 ui.add_space(4.0_f32);
 
@@ -2787,11 +2834,9 @@ impl PrismApp {
                         .color(TEXT_PRIMARY),
                 );
                 ui.label(
-                    RichText::new(
-                        "Latest release notes and improvements across all suite applications",
-                    )
-                    .size(12.0_f32)
-                    .color(TEXT_MUTED),
+                    RichText::new(self.i18n.text("whats-new-subtitle"))
+                        .size(12.0_f32)
+                        .color(TEXT_MUTED),
                 );
             });
         });
@@ -2935,8 +2980,8 @@ impl PrismApp {
                         .strong()
                         .color(TEXT_PRIMARY),
                 );
-                ui.hyperlink_to("GitHub Repository", LAUNCHER_REPO_URL);
-                ui.hyperlink_to("Creative Suite Organization", GITHUB_ORG_URL);
+                ui.hyperlink_to(self.i18n.text("about-launcher-repo"), LAUNCHER_REPO_URL);
+                ui.hyperlink_to(self.i18n.text("about-org-repo"), GITHUB_ORG_URL);
 
                 ui.add_space(14.0_f32);
                 ui.separator();
