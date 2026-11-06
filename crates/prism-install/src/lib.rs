@@ -507,26 +507,21 @@ fn find_binary_recursive(dir: &Path, binary_name: &str, depth: usize) -> Option<
 }
 
 pub(crate) fn remove_link_or_dir(path: &Path) -> std::io::Result<()> {
-    if let Ok(meta) = fs::symlink_metadata(path) {
-        #[cfg(windows)]
-        {
-            if meta.file_type().is_symlink() {
-                if meta.is_dir() {
-                    // On Windows, directory symlinks and junctions must be removed with remove_dir (RemoveDirectoryW)
-                    fs::remove_dir(path)?;
-                } else {
-                    fs::remove_file(path)?;
-                }
-            } else if meta.is_dir() {
-                if fs::remove_dir(path).is_err() {
-                    fs::remove_dir_all(path)?;
-                }
-            } else {
-                fs::remove_file(path)?;
+    #[cfg(windows)]
+    {
+        if fs::symlink_metadata(path).is_ok() {
+            // On Windows:
+            // 1. Try remove_dir (RemoveDirectoryW) - succeeds for directory symlinks, junctions, and empty dirs
+            // 2. Try remove_file (DeleteFileW) - succeeds for file symlinks and regular files
+            // 3. Fallback to remove_dir_all - succeeds for non-empty directories
+            if fs::remove_dir(path).is_err() && fs::remove_file(path).is_err() {
+                fs::remove_dir_all(path)?;
             }
         }
-        #[cfg(not(windows))]
-        {
+    }
+    #[cfg(not(windows))]
+    {
+        if let Ok(meta) = fs::symlink_metadata(path) {
             if meta.file_type().is_symlink() || meta.is_file() {
                 fs::remove_file(path)?;
             } else if meta.is_dir() {
