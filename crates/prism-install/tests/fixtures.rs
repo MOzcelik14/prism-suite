@@ -234,6 +234,7 @@ fn test_fixture_7_update_over_legacy_directory() {
 
     // Verify current is now a symlink (or junction) pointing to versions/0.1.1
     let cur_link = mgr.current_link_path(stem).unwrap();
+    assert!(cur_link.exists());
     #[cfg(unix)]
     {
         let meta = fs::symlink_metadata(&cur_link).unwrap();
