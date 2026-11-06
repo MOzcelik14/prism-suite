@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>prisM. Suite — Unified Creative Desktop Environment</title>
+  <meta name="description" content="A local-first, memory-safe desktop launcher, package manager, and auto-updater for open-source creative applications (triM., steM., beaM.). Built in Rust." />
+  <link rel="icon" type="image/svg+xml" href="assets/prism.svg" />
+  <link rel="stylesheet" href="style.css" />
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="prisM. Suite — Unified Creative Desktop Environment" />
+  <meta property="og:description" content="Local-first desktop portal and package manager for open-source creative software. Fast, privacy-preserving, atomic rollbacks." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://mozcelik14.github.io/prism-suite/" />
+  <meta property="og:image" content="assets/logo.png" />
+</head>
+<body>
+
+  <!-- Navigation -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="#" class="nav-brand">
+        <img src="assets/prism.svg" alt="prisM. Suite logo" class="nav-logo" />
+        <span class="nav-brand-text">
+          prisM. Suite
+          <span class="tag">v0.2.0</span>
+        </span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="#apps">Applications</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#downloads">Downloads</a>
+        <a href="#security">Security</a>
+        <a href="https://github.com/MOzcelik14/prism-suite" target="_blank" rel="noopener">Source Code</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="#downloads" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Get prisM.
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <div class="container">
+      <div class="release-pill">
+        <span class="pulse-dot"></span>
+        <span>Production Release v0.2.0 • Linux &amp; Windows</span>
+      </div>
+
+      <h1 class="hero-title">
+        The Unified Management Portal for <span class="gradient-text">Native Creative Tools</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        An engineering-grade, local-first desktop portal, package manager, and update supervisor built in Rust. 
+        Zero telemetry, atomic version rollbacks, cryptographic release verification, and independent process lifecycle management.
+      </p>
+
+      <div class="hero-actions">
+        <a href="#downloads" class="btn btn-primary btn-lg">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Download v0.2.0 Packages
+        </a>
+        <a href="https://github.com/MOzcelik14/prism-suite" target="_blank" rel="noopener" class="btn btn-secondary btn-lg">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+          </svg>
+          GitHub Repository
+        </a>
+      </div>
+
+      <div class="hero-specs">
+        <span>GPL-3.0 License</span>
+        <span>•</span>
+        <span>100% Rust</span>
+        <span>•</span>
+        <span>Zero Telemetry</span>
+        <span>•</span>
+        <span>Offline-First</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Managed Creative Applications -->
+  <section id="apps">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-category">Product Ecosystem</div>
+        <h2 class="section-title">Integrated Standalone Creative Tools</h2>
+        <p class="section-desc">
+          Every managed tool in the prisM. ecosystem is engineered as an autonomous, high-performance native program. 
+          The suite manages versions, updates, and shared preferences without intrusive background daemons.
+        </p>
+      </div>
+
+      <div class="apps-grid">
+        <!-- triM. -->
+        <article class="app-card">
+          <div class="app-card-header">
+            <div class="app-icon-wrapper">
+              <img src="assets/apps/trim.png" alt="triM. icon" class="app-icon" />
+            </div>
+            <span class="app-badge badge-video">Video Production</span>
+          </div>
+
+          <h3 class="app-card-name">triM.</h3>
+          <div class="app-card-tagline">Multi-track timeline and non-linear video editing studio</div>
+          <div class="app-card-compare">Adobe Premiere Pro® alternative</div>
+
+          <ul class="app-features">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Multi-track audio and video timeline compositing</span>
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Hardware-accelerated rendering and frame playback</span>
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Built-in transition matrices and subtitling pipeline</span>
+            </li>
+          </ul>
+
+          <div class="app-card-footer">
+            <span style="font-size: 0.8rem; color: var(--text-dim); font-family: var(--font-mono);">Current: v0.1.0</span>
+            <a href="https://github.com/MOzcelik14/triM" target="_blank" rel="noopener" class="app-repo-link">
+              Repository
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+            </a>
+          </div>
+        </article>
+
+        <!-- steM. -->
+        <article class="app-card">
+          <div class="app-card-header">
+            <div class="app-icon-wrapper">
+              <img src="assets/apps/stem.png" alt="steM. icon" class="app-icon" />
+            </div>
+            <span class="app-badge badge-audio">Audio Workstation</span>
+          </div>
+
+          <h3 class="app-card-name">steM.</h3>
+          <div class="app-card-tagline">Digital audio workstation and spectral waveform editor</div>
+          <div class="app-card-compare">Audacity &amp; Reaper alternative</div>
+
+          <ul class="app-features">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Non-destructive multitrack mixing and real-time DSP</span>
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Spectral noise profiling and waveform restoration</span>
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Integrated AI stem separation pipeline compatibility</span>
+            </li>
+          </ul>
+
+          <div class="app-card-footer">
+            <span style="font-size: 0.8rem; color: var(--text-dim); font-family: var(--font-mono);">Current: v0.1.1</span>
+            <a href="https://github.com/MOzcelik14/steM" target="_blank" rel="noopener" class="app-repo-link">
+              Repository
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+            </a>
+          </div>
+        </article>
+
+        <!-- beaM. -->
+        <article class="app-card">
+          <div class="app-card-header">
+            <div class="app-icon-wrapper">
+              <img src="assets/apps/beam.png" alt="beaM. icon" class="app-icon" />
+            </div>
+            <span class="app-badge badge-photo">Photo Studio</span>
+          </div>
+
+          <h3 class="app-card-name">beaM.</h3>
+          <div class="app-card-tagline">Parametric RAW photo processor and digital darkroom</div>
+          <div class="app-card-compare">Adobe Lightroom® alternative</div>
+
+          <ul class="app-features">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>High dynamic range RAW sensor decoding pipeline</span>
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Parametric exposure curves, tone mapping, and grading</span>
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>High-throughput parallel batch export and metadata tagging</span>
+            </li>
+          </ul>
+
+          <div class="app-card-footer">
+            <span style="font-size: 0.8rem; color: var(--text-dim); font-family: var(--font-mono);">Current: v0.1.0</span>
+            <a href="https://github.com/MOzcelik14/beaM" target="_blank" rel="noopener" class="app-repo-link">
+              Repository
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+            </a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Technical Architecture -->
+  <section id="architecture">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-category">Engineering Standards</div>
+        <h2 class="section-title">Built for Production Reliability</h2>
+        <p class="section-desc">
+          Engineered to eliminate common points of failure in media production pipelines: broken updates, vendor lock-in, background telemetry overhead, and runtime dependency conflicts.
+        </p>
+      </div>
+
+      <div class="arch-grid">
+        <div class="arch-item">
+          <div class="arch-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+          </div>
+          <h3>Atomic Upgrades &amp; Rollbacks</h3>
+          <p>
+            Releases deploy into dedicated version directories (`versions/&lt;version&gt;`). 
+            The active release is switched atomically via filesystem symlinks on Linux and directory junctions on Windows. 
+            Revert to previous versions instantly in 1 click without data corruption.
+          </p>
+        </div>
+
+        <div class="arch-item">
+          <div class="arch-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </div>
+          <h3>Cryptographic Security</h3>
+          <p>
+            Binary distributions are authenticated with detached Ed25519 Minisign signatures and SHA-256 integrity verification. 
+            The archive engine sanitizes all paths to prevent traversal exploits (`../`) and unauthorized filesystem writes.
+          </p>
+        </div>
+
+        <div class="arch-item">
+          <div class="arch-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          </div>
+          <h3>100% Local Sovereignty</h3>
+          <p>
+            Zero cloud requirement, zero tracking, and zero compulsory online accounts. 
+            Your creative work remains strictly on your local disk. 
+            The launcher operates reliably in fully air-gapped production studios.
+          </p>
+        </div>
+
+        <div class="arch-item">
+          <div class="arch-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          </div>
+          <h3>Process Decoupling</h3>
+          <p>
+            Creative tools execute in decoupled process groups (`setsid` on Linux, independent creation flags on Windows). 
+            You can close or update the suite launcher without terminating or interrupting ongoing audio/video rendering.
+          </p>
+        </div>
+
+        <div class="arch-item">
+          <div class="arch-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+          </div>
+          <h3>Embedded Typography</h3>
+          <p>
+            The GUI embeds the DejaVu Sans typography engine directly within the binary. 
+            Full coverage for European, Turkish (`ç, ğ, ı, İ, ö, ş, ü`), and mathematical symbols renders crisply with zero system font dependencies.
+          </p>
+        </div>
+
+        <div class="arch-item">
+          <div class="arch-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+          </div>
+          <h3>Shared Preferences Sync</h3>
+          <p>
+            Automated configuration synchronization protocol (`shared.ron`) propagates active language selections (English and Turkish) and update channel preferences across all installed applications.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Downloads Matrix -->
+  <section id="downloads">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-category">Install &amp; Deploy</div>
+        <h2 class="section-title">Production Packages (v0.2.0)</h2>
+        <p class="section-desc">
+          Official binary distributions for Linux and Windows. 
+          Choose the standard package format for your operating system or deploy the standalone portable packages.
+        </p>
+      </div>
+
+      <div class="downloads-wrapper">
+        <div class="tab-nav">
+          <button class="tab-btn active" onclick="switchTab('deb')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            Debian / Ubuntu (.deb)
+          </button>
+          <button class="tab-btn" onclick="switchTab('rpm')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+            Fedora / RHEL (.rpm)
+          </button>
+          <button class="tab-btn" onclick="switchTab('appimage')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            Generic Linux (AppImage)
+          </button>
+          <button class="tab-btn" onclick="switchTab('windows')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h7v7H4z"></path><path d="M13 4h7v7h-7z"></path><path d="M4 13h7v7H4z"></path><path d="M13 13h7v7h-7z"></path></svg>
+            Windows 64-bit (.zip)
+          </button>
+        </div>
+
+        <!-- Debian / Ubuntu -->
+        <div id="tab-deb" class="tab-content active">
+          <div class="download-row">
+            <div class="download-info">
+              <h4>Native Debian / Ubuntu Package</h4>
+              <p>Installs binaries into `/usr/bin/prism`, system icons, and FreeDesktop menu entry.</p>
+            </div>
+            <a href="https://github.com/MOzcelik14/prism-suite/releases/download/v0.2.0/prism_0.2.0_amd64.deb" class="btn btn-primary">
+              Download .deb (6.1 MB)
+            </a>
+          </div>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span>Terminal Installation</span>
+              <button class="copy-btn" onclick="copyCode(this, 'deb-cmd')">Copy</button>
+            </div>
+            <pre id="deb-cmd">sudo dpkg -i prism_0.2.0_amd64.deb
+sudo apt-get install -f</pre>
+          </div>
+        </div>
+
+        <!-- Fedora / RHEL -->
+        <div id="tab-rpm" class="tab-content">
+          <div class="download-row">
+            <div class="download-info">
+              <h4>Native RPM Package</h4>
+              <p>For Fedora, CentOS, Rocky Linux, and RHEL. Installs native desktop entries and dependencies.</p>
+            </div>
+            <a href="https://github.com/MOzcelik14/prism-suite/releases/download/v0.2.0/prism-0.2.0-1.x86_64.rpm" class="btn btn-primary">
+              Download .rpm (6.1 MB)
+            </a>
+          </div>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span>Terminal Installation</span>
+              <button class="copy-btn" onclick="copyCode(this, 'rpm-cmd')">Copy</button>
+            </div>
+            <pre id="rpm-cmd">sudo dnf install ./prism-0.2.0-1.x86_64.rpm</pre>
+          </div>
+        </div>
+
+        <!-- AppImage -->
+        <div id="tab-appimage" class="tab-content">
+          <div class="download-row">
+            <div class="download-info">
+              <h4>Standalone Portable AppImage</h4>
+              <p>Single executable bundle compatible across all standard modern Linux distributions.</p>
+            </div>
+            <a href="https://github.com/MOzcelik14/prism-suite/releases/download/v0.2.0/prism-0.2.0-x86_64.AppImage" class="btn btn-primary">
+              Download .AppImage (7.3 MB)
+            </a>
+          </div>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span>Execution</span>
+              <button class="copy-btn" onclick="copyCode(this, 'appimage-cmd')">Copy</button>
+            </div>
+            <pre id="appimage-cmd">chmod +x prism-0.2.0-x86_64.AppImage
+./prism-0.2.0-x86_64.AppImage</pre>
+          </div>
+        </div>
+
+        <!-- Windows -->
+        <div id="tab-windows" class="tab-content">
+          <div class="download-row">
+            <div class="download-info">
+              <h4>Windows 10 / 11 Portable Archive</h4>
+              <p>Standalone archive with `prism.exe`. Automatically manages junctions in `%LOCALAPPDATA%`.</p>
+            </div>
+            <a href="https://github.com/MOzcelik14/prism-suite/releases/download/v0.2.0/prism-0.2.0-windows-x86_64.zip" class="btn btn-primary">
+              Download .zip (Windows 64-bit)
+            </a>
+          </div>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span>PowerShell Quick Run</span>
+              <button class="copy-btn" onclick="copyCode(this, 'win-cmd')">Copy</button>
+            </div>
+            <pre id="win-cmd">Expand-Archive -Path .\prism-0.2.0-windows-x86_64.zip -DestinationPath C:\prism-suite
+C:\prism-suite\prism.exe</pre>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Security & Verification -->
+  <section id="security">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-category">Integrity &amp; Trust</div>
+        <h2 class="section-title">Cryptographic Verification Guide</h2>
+        <p class="section-desc">
+          Every official release archive published by the project is paired with a SHA-256 manifest and signed via Minisign (Ed25519).
+        </p>
+      </div>
+
+      <div class="code-block" style="max-width: 860px; margin: 0 auto;">
+        <div class="code-header">
+          <span>SHA-256 Checksum &amp; Signature Verification</span>
+          <button class="copy-btn" onclick="copyCode(this, 'verify-cmd')">Copy</button>
+        </div>
+        <pre id="verify-cmd"># 1. Download artifact, manifest, and detached signature
+curl -LO https://github.com/MOzcelik14/prism-suite/releases/download/v0.2.0/SHA256SUMS.txt
+curl -LO https://github.com/MOzcelik14/prism-suite/releases/download/v0.2.0/SHA256SUMS.txt.minisig
+
+# 2. Verify SHA-256 hash match
+sha256sum -c SHA256SUMS.txt --ignore-missing
+
+# 3. Verify publisher Minisign signature (if minisign installed)
+minisign -Vm SHA256SUMS.txt -P RWQkX1dC2Kz9...pubkey</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="nav-brand">
+            <img src="assets/prism.svg" alt="prisM. Suite logo" class="nav-logo" />
+            <span>prisM. Suite</span>
+          </div>
+          <p>
+            An open-source desktop software portal, package supervisor, and atomic updater for creative workflows on Linux and Windows.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h5>Creative Suite</h5>
+          <ul>
+            <li><a href="https://github.com/MOzcelik14/triM" target="_blank" rel="noopener">triM. (Video)</a></li>
+            <li><a href="https://github.com/MOzcelik14/steM" target="_blank" rel="noopener">steM. (Audio)</a></li>
+            <li><a href="https://github.com/MOzcelik14/beaM" target="_blank" rel="noopener">beaM. (RAW Photo)</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Resources</h5>
+          <ul>
+            <li><a href="https://github.com/MOzcelik14/prism-suite/releases" target="_blank" rel="noopener">Releases &amp; Changelogs</a></li>
+            <li><a href="https://github.com/MOzcelik14/prism-suite" target="_blank" rel="noopener">Source Code</a></li>
+            <li><a href="https://github.com/MOzcelik14/prism-suite/issues" target="_blank" rel="noopener">Issue Tracker</a></li>
+            <li><a href="https://www.gnu.org/licenses/gpl-3.0" target="_blank" rel="noopener">GPL-3.0 License</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Murat &Ouml;z&ccedil;elik. All rights reserved. Released under the GNU General Public License v3.0.</div>
+        <div>Built with Rust and eframe. Telemetry-free by design.</div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function switchTab(platform) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+      event.currentTarget.classList.add('active');
+      document.getElementById('tab-' + platform).classList.add('active');
+    }
+
+    function copyCode(btn, elementId) {
+      const code = document.getElementById(elementId).innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = 'Copied';
+        setTimeout(() => {
+          btn.innerText = originalText;
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
