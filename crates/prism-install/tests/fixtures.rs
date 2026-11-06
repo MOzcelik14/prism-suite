@@ -234,9 +234,11 @@ fn test_fixture_7_update_over_legacy_directory() {
 
     // Verify current is now a symlink (or junction) pointing to versions/0.1.1
     let cur_link = mgr.current_link_path(stem).unwrap();
-    let meta = fs::symlink_metadata(&cur_link).unwrap();
     #[cfg(unix)]
-    assert!(meta.file_type().is_symlink());
+    {
+        let meta = fs::symlink_metadata(&cur_link).unwrap();
+        assert!(meta.file_type().is_symlink());
+    }
 
     // Verify rollback works back to 0.1.0
     let restored = mgr
