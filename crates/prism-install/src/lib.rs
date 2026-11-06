@@ -116,7 +116,7 @@ impl InstallationManager {
     /// Detects the previous installed version if a valid `previous` link exists.
     pub fn detect_previous_version(&self, app: &AppEntry) -> Option<String> {
         let prev_path = self.previous_link_path(app).ok()?;
-        if prev_path.exists() {
+        if prev_path.exists() || fs::symlink_metadata(&prev_path).is_ok() {
             if let Ok(target) = fs::read_link(&prev_path) {
                 if let Some(name) = target.file_name().and_then(|n| n.to_str()) {
                     return Some(name.to_string());
@@ -130,7 +130,7 @@ impl InstallationManager {
     pub fn detect_state(&self, app: &AppEntry) -> AppInstallState {
         match self.current_link_path(app) {
             Ok(cur_link) => {
-                if cur_link.exists() {
+                if cur_link.exists() || fs::symlink_metadata(&cur_link).is_ok() {
                     let version_file = cur_link.join("version.txt");
                     let version = if version_file.exists() {
                         fs::read_to_string(version_file)
@@ -291,9 +291,9 @@ impl InstallationManager {
         #[cfg(windows)]
         {
             if current_link.exists() || fs::symlink_metadata(&current_link).is_ok() {
-                let _ = remove_link_or_dir(&current_link);
+                remove_link_or_dir(&current_link)?;
             }
-            let _ = std::os::windows::fs::symlink_dir(target_version_dir, &current_link);
+            std::os::windows::fs::symlink_dir(target_version_dir, &current_link)?;
         }
 
         Ok(())
@@ -342,7 +342,7 @@ impl InstallationManager {
     /// Rolls back the active version to the version referenced by the `previous` link.
     pub fn rollback(&self, app: &AppEntry) -> Result<String, InstallError> {
         let prev_link = self.previous_link_path(app)?;
-        if !prev_link.exists() {
+        if !prev_link.exists() && fs::symlink_metadata(&prev_link).is_err() {
             return Err(InstallError::NoPreviousVersion);
         }
 
@@ -508,10 +508,30 @@ fn find_binary_recursive(dir: &Path, binary_name: &str, depth: usize) -> Option<
 
 pub(crate) fn remove_link_or_dir(path: &Path) -> std::io::Result<()> {
     if let Ok(meta) = fs::symlink_metadata(path) {
-        if meta.file_type().is_symlink() || meta.is_file() {
-            fs::remove_file(path)?;
-        } else if meta.is_dir() {
-            fs::remove_dir_all(path)?;
+        #[cfg(windows)]
+        {
+            if meta.file_type().is_symlink() {
+                if meta.is_dir() {
+                    // On Windows, directory symlinks and junctions must be removed with remove_dir (RemoveDirectoryW)
+                    fs::remove_dir(path)?;
+                } else {
+                    fs::remove_file(path)?;
+                }
+            } else if meta.is_dir() {
+                if fs::remove_dir(path).is_err() {
+                    fs::remove_dir_all(path)?;
+                }
+            } else {
+                fs::remove_file(path)?;
+            }
+        }
+        #[cfg(not(windows))]
+        {
+            if meta.file_type().is_symlink() || meta.is_file() {
+                fs::remove_file(path)?;
+            } else if meta.is_dir() {
+                fs::remove_dir_all(path)?;
+            }
         }
     }
     Ok(())
