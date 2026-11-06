@@ -66,15 +66,93 @@ pub fn apply_self_update(
         perms.set_mode(0o755);
         fs::set_permissions(&new_binary, perms)?;
 
-        // On Unix, atomic rename replaces the active running binary without ETXTBSY
-        let backup_path = PathBuf::from(format!("{}.old", current_exe.display()));
+        // Check if the current executable's directory is writable by the current user.
+        // System packages (e.g. /usr/bin/prism) or AppImage squashfs mounts are read-only for normal users.
+        let is_writable = current_exe
+            .parent()
+            .map(|p| {
+                let test_path = p.join(format!(".prism_write_test_{}", rand_id));
+                match fs::OpenOptions::new()
+                    .write(true)
+                    .create_new(true)
+                    .open(&test_path)
+                {
+                    Ok(_) => {
+                        let _ = fs::remove_file(&test_path);
+                        true
+                    }
+                    Err(_) => false,
+                }
+            })
+            .unwrap_or(false);
+
+        let target_exe = if is_writable {
+            current_exe.to_path_buf()
+        } else if let Some(base) = directories::BaseDirs::new() {
+            let user_bin = base.home_dir().join(".local/bin");
+            fs::create_dir_all(&user_bin)?;
+            let bin_name = current_exe
+                .file_name()
+                .unwrap_or_else(|| std::ffi::OsStr::new("prism"));
+            let user_target = user_bin.join(bin_name);
+
+            // Install or override user desktop file so the desktop environment launches the updated user binary
+            let apps_dir = base.data_local_dir().join("applications");
+            if fs::create_dir_all(&apps_dir).is_ok() {
+                let desktop_file = apps_dir.join("prism.desktop");
+                let desktop_content = format!(
+                    "[Desktop Entry]\n\
+                    Name=prisM. Suite\n\
+                    GenericName=Creative Suite Launcher\n\
+                    GenericName[tr]=Yaratıcı Yazılım Paketi Başlatıcı\n\
+                    Comment=Unified desktop launcher, installer, and auto-updater for triM., steM., and beaM.\n\
+                    Comment[tr]=triM., steM. ve beaM. için merkezi masaüstü başlatıcı ve güncelleme yöneticisi\n\
+                    Exec=\"{exec}\" %F\n\
+                    Icon=prism\n\
+                    Terminal=false\n\
+                    Type=Application\n\
+                    Categories=Utility;Development;Graphics;AudioVideo;\n\
+                    StartupNotify=true\n\
+                    StartupWMClass=prism\n\
+                    Keywords=launcher;updater;suite;creative;trim;stem;beam;store;\n",
+                    exec = user_target.display()
+                );
+                let _ = fs::write(desktop_file, desktop_content);
+            }
+            user_target
+        } else {
+            current_exe.to_path_buf()
+        };
+
+        // On Unix, atomic rename replaces the active running binary without ETXTBSY.
+        // If rename fails (e.g. cross-device EXDEV), fall back to copy and remove.
+        let backup_path = PathBuf::from(format!("{}.old", target_exe.display()));
         let _ = fs::remove_file(&backup_path);
 
-        if current_exe.exists() {
-            fs::rename(current_exe, &backup_path)?;
+        if target_exe.exists() {
+            let _ = fs::rename(&target_exe, &backup_path);
         }
 
-        fs::rename(&new_binary, current_exe)?;
+        let replace_res = if fs::rename(&new_binary, &target_exe).is_err() {
+            match fs::copy(&new_binary, &target_exe) {
+                Ok(_) => {
+                    let _ = fs::remove_file(&new_binary);
+                    Ok(())
+                }
+                Err(e) => Err(e),
+            }
+        } else {
+            Ok(())
+        };
+
+        if let Err(e) = replace_res {
+            // Rollback to backup binary if replacement failed
+            if backup_path.exists() {
+                let _ = fs::rename(&backup_path, &target_exe);
+            }
+            return Err(InstallError::Io(e));
+        }
+
         let _ = fs::remove_file(&backup_path);
         let _ = fs::remove_dir_all(&temp_dir);
     }
