@@ -606,55 +606,83 @@ section {
 }
 
 /* ==========================================================================
+   Section Scroll Margin
+   ========================================================================== */
+
+section[id] {
+  scroll-margin-top: 64px;
+}
+
+/* ==========================================================================
    Footer
    ========================================================================== */
 
 footer {
   background: var(--bg-main);
-  padding: 36px 0 24px;
+  padding: 48px 0 28px;
   font-size: 0.85rem;
   color: var(--text-muted);
 }
 
-.footer-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 32px;
-  margin-bottom: 28px;
-  flex-wrap: wrap;
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 36px;
 }
 
-.footer-brand {
-  max-width: 440px;
-}
-
-.footer-brand strong {
-  color: var(--text-primary);
+.footer-brand-col strong {
   display: block;
-  margin-bottom: 6px;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  margin-bottom: 8px;
 }
 
-.footer-brand p {
-  line-height: 1.5;
-}
-
-.footer-links {
-  display: flex;
-  gap: 28px;
-}
-
-.footer-links a {
+.footer-brand-col p {
   color: var(--text-muted);
+  line-height: 1.55;
+  font-size: 0.88rem;
+  margin-bottom: 12px;
+  max-width: 420px;
 }
 
-.footer-links a:hover {
+.footer-license {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.footer-col h5 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+}
+
+.footer-col ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.footer-col a {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  transition: color 0.15s ease;
+}
+
+.footer-col a:hover {
   color: var(--accent-blue);
 }
 
+.footer-sub {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
 .footer-bottom {
-  padding-top: 18px;
+  padding-top: 20px;
   border-top: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -672,6 +700,11 @@ footer {
 @media (max-width: 992px) {
   .apps-grid, .arch-grid {
     grid-template-columns: 1fr;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
   }
 
   .hero-title {
@@ -692,8 +725,5 @@ footer {
     flex-direction: column;
     align-items: flex-start;
   }
-
-  .footer-top {
-    flex-direction: column;
-  }
 }
+

@@ -21,10 +21,7 @@
     <div class="container nav-container">
       <a href="#" class="nav-brand">
         <img src="assets/prism.svg" alt="prisM. Suite logo" class="nav-logo" />
-        <span class="nav-brand-text">
-          prisM. Suite
-          <span class="tag">v0.2.0</span>
-        </span>
+        <span class="nav-brand-text">prisM. Suite</span>
       </a>
 
       <nav class="nav-links">
@@ -56,10 +53,6 @@
   <!-- Hero Section -->
   <section class="hero">
     <div class="container">
-      <div class="hero-pill">
-        <span data-i18n="hero-pill">Sürüm 0.2.0 • Linux &amp; Windows</span>
-      </div>
-
       <h1 class="hero-title" data-i18n="hero-title">
         Açık Kaynaklı Yaratıcı Masaüstü Araçları
       </h1>
@@ -75,10 +68,10 @@
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          <span>v0.2.0 Paketlerini İndir</span>
+          <span>Paketleri İndir</span>
         </a>
         <a href="https://github.com/MOzcelik14/prism-suite" target="_blank" rel="noopener" class="btn btn-secondary btn-lg" data-i18n="hero-btn-repo">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
           </svg>
           <span>GitHub Deposu</span>
@@ -119,7 +112,7 @@
 
           <div class="app-card-name-row">
             <h3 class="app-card-name">triM.</h3>
-            <span class="app-version-tag">v1.3.0</span>
+            <span class="app-version-tag trim-ver">v1.3.0</span>
           </div>
           <div class="app-card-tagline" data-i18n="trim-tagline">
             Hafif ve modern doğrusal olmayan video düzenleyici
@@ -160,7 +153,7 @@
 
           <div class="app-card-name-row">
             <h3 class="app-card-name">steM.</h3>
-            <span class="app-version-tag">v0.1.1</span>
+            <span class="app-version-tag stem-ver">v0.1.1</span>
           </div>
           <div class="app-card-tagline" data-i18n="stem-tagline">
             Çok kanallı ses çalışma istasyonu ve dalga formu düzenleyici
@@ -201,7 +194,7 @@
 
           <div class="app-card-name-row">
             <h3 class="app-card-name">beaM.</h3>
-            <span class="app-version-tag">v0.1.1</span>
+            <span class="app-version-tag beam-ver">v0.1.1</span>
           </div>
           <div class="app-card-tagline" data-i18n="beam-tagline">
             Tahribatsız RAW fotoğraf düzenleyici ve kütüphane yöneticisi
@@ -331,10 +324,10 @@
         <div id="tab-deb" class="tab-content active">
           <div class="download-row">
             <div class="download-info">
-              <h4>prisM. Suite v0.2.0 (Debian / Ubuntu 64-bit)</h4>
+              <h4>prisM. Suite <span class="prism-ver">v0.2.0</span> (Debian / Ubuntu 64-bit)</h4>
               <p data-i18n="dl-deb-desc">Ubuntu 20.04+, Debian 11+, Linux Mint, Pop!_OS ve türevleri için .deb paketi.</p>
             </div>
-            <a href="https://github.com/MOzcelik14/prism-suite/releases/download/v0.2.0/prism_0.2.0_amd64.deb" class="btn btn-primary" data-i18n="btn-download-deb">
+            <a id="link-deb" href="https://github.com/MOzcelik14/prism-suite/releases/download/v0.2.0/prism_0.2.0_amd64.deb" class="btn btn-primary" data-i18n="btn-download-deb">
               .deb Paketini İndir
             </a>
           </div>
@@ -351,10 +344,10 @@ sudo dpkg -i prism_0.2.0_amd64.deb</div>
         <div id="tab-rpm" class="tab-content">
           <div class="download-row">
             <div class="download-info">
-              <h4>prisM. Suite v0.2.0 (Fedora / RHEL / openSUSE)</h4>
+              <h4>prisM. Suite <span class="prism-ver">v0.2.0</span> (Fedora / RHEL / openSUSE)</h4>
               <p data-i18n="dl-rpm-desc">Fedora 38+, RHEL 9+, CentOS Stream ve openSUSE için .rpm paketi.</p>
             </div>
-            <a href="https://github.com/MOzcelik14/prism-suite/releases/download/v0.2.0/prism-0.2.0-1.x86_64.rpm" class="btn btn-primary" data-i18n="btn-download-rpm">
+            <a id="link-rpm" href="https://github.com/MOzcelik14/prism-suite/releases/download/v0.2.0/prism-0.2.0-1.x86_64.rpm" class="btn btn-primary" data-i18n="btn-download-rpm">
               .rpm Paketini İndir
             </a>
           </div>
@@ -371,10 +364,10 @@ sudo dnf install ./prism-0.2.0-1.x86_64.rpm</div>
         <div id="tab-appimage" class="tab-content">
           <div class="download-row">
             <div class="download-info">
-              <h4>prisM. Suite v0.2.0 (Evrensel Linux AppImage)</h4>
+              <h4>prisM. Suite <span class="prism-ver">v0.2.0</span> (Evrensel Linux AppImage)</h4>
               <p data-i18n="dl-appimage-desc">Tüm modern x86_64 Linux dağıtımlarında kurulum gerektirmeden tek tıkla çalışır.</p>
             </div>
-            <a href="https://github.com/MOzcelik14/prism-suite/releases/download/v0.2.0/prism-0.2.0-x86_64.AppImage" class="btn btn-primary" data-i18n="btn-download-appimage">
+            <a id="link-appimage" href="https://github.com/MOzcelik14/prism-suite/releases/download/v0.2.0/prism-0.2.0-x86_64.AppImage" class="btn btn-primary" data-i18n="btn-download-appimage">
               .AppImage İndir
             </a>
           </div>
@@ -392,10 +385,10 @@ chmod +x prism-0.2.0-x86_64.AppImage
         <div id="tab-windows" class="tab-content">
           <div class="download-row">
             <div class="download-info">
-              <h4>prisM. Suite v0.2.0 (Windows 10/11 64-bit)</h4>
+              <h4>prisM. Suite <span class="prism-ver">v0.2.0</span> (Windows 10/11 64-bit)</h4>
               <p data-i18n="dl-win-desc">Taşınabilir ZIP paketi. İndirin, bir klasöre çıkarın ve prism.exe dosyasını çalıştırın.</p>
             </div>
-            <a href="https://github.com/MOzcelik14/prism-suite/releases/download/v0.2.0/prism-windows-x86_64.zip" class="btn btn-primary" data-i18n="btn-download-win">
+            <a id="link-win" href="https://github.com/MOzcelik14/prism-suite/releases/download/v0.2.0/prism-0.2.0-windows-x86_64.zip" class="btn btn-primary" data-i18n="btn-download-win">
               Windows ZIP İndir
             </a>
           </div>
@@ -404,7 +397,7 @@ chmod +x prism-0.2.0-x86_64.AppImage
             <span data-i18n="powershell-install">PowerShell ile İndirme</span>
             <button class="copy-btn" onclick="copyCode('win-cmd')"><span data-i18n="btn-copy">Kopyala</span></button>
           </div>
-          <div class="code-block" id="win-cmd">Invoke-WebRequest -Uri "https://github.com/MOzcelik14/prism-suite/releases/download/v0.2.0/prism-windows-x86_64.zip" -OutFile "prism.zip"
+          <div class="code-block" id="win-cmd">Invoke-WebRequest -Uri "https://github.com/MOzcelik14/prism-suite/releases/download/v0.2.0/prism-0.2.0-windows-x86_64.zip" -OutFile "prism.zip"
 Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\prism"
 &amp; "$env:LOCALAPPDATA\Programs\prism\prism.exe"</div>
         </div>
@@ -436,29 +429,36 @@ cargo run --release -p prism-app</div>
   <!-- Footer -->
   <footer>
     <div class="container">
-      <div class="footer-top">
-        <div class="footer-brand">
+      <div class="footer-grid">
+        <div class="footer-col footer-brand-col">
           <strong>prisM. Suite</strong>
           <p data-i18n="footer-desc">
             Murat Özçelik tarafından Rust ile geliştirilen açık kaynaklı masaüstü video, ses ve fotoğraf düzenleme araçları paketi.
           </p>
+          <div class="footer-license">GPL-3.0 License</div>
         </div>
 
-        <div class="footer-links">
-          <div>
-            <strong style="color: var(--text-primary); display: block; margin-bottom: 8px;" data-i18n="footer-repos">Depolar</strong>
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-              <a href="https://github.com/MOzcelik14/prism-suite" target="_blank" rel="noopener">prisM. Suite</a>
-              <a href="https://github.com/MOzcelik14/triM" target="_blank" rel="noopener">triM. (Video)</a>
-              <a href="https://github.com/MOzcelik14/steM" target="_blank" rel="noopener">steM. (Ses)</a>
-              <a href="https://github.com/MOzcelik14/beaM" target="_blank" rel="noopener">beaM. (RAW Fotoğraf)</a>
-            </div>
-          </div>
+        <div class="footer-col">
+          <h5 data-i18n="footer-apps-title">Uygulamalar</h5>
+          <ul>
+            <li><a href="https://github.com/MOzcelik14/triM" target="_blank" rel="noopener">triM. <span class="footer-sub">(Video)</span></a></li>
+            <li><a href="https://github.com/MOzcelik14/steM" target="_blank" rel="noopener">steM. <span class="footer-sub">(Ses)</span></a></li>
+            <li><a href="https://github.com/MOzcelik14/beaM" target="_blank" rel="noopener">beaM. <span class="footer-sub">(RAW Fotoğraf)</span></a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5 data-i18n="footer-links-title">Proje &amp; Kaynaklar</h5>
+          <ul>
+            <li><a href="https://github.com/MOzcelik14/prism-suite" target="_blank" rel="noopener" data-i18n="footer-repo">GitHub Deposu</a></li>
+            <li><a href="https://github.com/MOzcelik14/prism-suite/releases" target="_blank" rel="noopener" data-i18n="footer-releases">Tüm Sürümler</a></li>
+            <li><a href="https://github.com/MOzcelik14/prism-suite/issues" target="_blank" rel="noopener" data-i18n="footer-issues">Hata Bildirimi</a></li>
+          </ul>
         </div>
       </div>
 
       <div class="footer-bottom">
-        <div>GPL-3.0 License &bull; Copyright &copy; 2026 Murat &Ouml;z&ccedil;elik</div>
+        <div>Copyright &copy; 2026 Murat &Ouml;z&ccedil;elik</div>
         <div data-i18n="footer-built">100% Rust ve egui ile geliştirildi</div>
       </div>
     </div>
@@ -501,10 +501,9 @@ cargo run --release -p prism-app</div>
         'nav-downloads': 'İndir',
         'nav-source': 'Kaynak Kod',
         'btn-get-prism': 'İndir',
-        'hero-pill': 'Sürüm 0.2.0 • Linux & Windows',
         'hero-title': 'Açık Kaynaklı Yaratıcı Masaüstü Araçları',
         'hero-subtitle': 'Rust ile geliştirilmiş video düzenleyici (triM.), ses iş istasyonu (steM.) ve RAW fotoğraf düzenleyiciyi (beaM.) yöneten, güncelleyen ve çalıştıran yerel masaüstü başlatıcısı.',
-        'hero-btn-download': 'v0.2.0 Paketlerini İndir',
+        'hero-btn-download': 'Paketleri İndir',
         'hero-btn-repo': 'GitHub Deposu',
         'spec-telemetry': 'Sıfır Telemetri',
         'spec-root': 'Root Yetkisi Gerekmez',
@@ -560,7 +559,11 @@ cargo run --release -p prism-app</div>
         'build-cmd-title': 'Derleme Komutları',
         'btn-copy': 'Kopyala',
         'footer-desc': 'Murat Özçelik tarafından Rust ile geliştirilen açık kaynaklı masaüstü video, ses ve fotoğraf düzenleme araçları paketi.',
-        'footer-repos': 'Depolar',
+        'footer-apps-title': 'Uygulamalar',
+        'footer-links-title': 'Proje & Kaynaklar',
+        'footer-repo': 'GitHub Deposu',
+        'footer-releases': 'Tüm Sürümler',
+        'footer-issues': 'Hata Bildirimi',
         'footer-built': '100% Rust ve egui ile geliştirildi'
       },
       en: {
@@ -569,10 +572,9 @@ cargo run --release -p prism-app</div>
         'nav-downloads': 'Download',
         'nav-source': 'Source Code',
         'btn-get-prism': 'Download',
-        'hero-pill': 'Release v0.2.0 • Linux & Windows',
         'hero-title': 'Open-Source Creative Desktop Tools',
         'hero-subtitle': 'A native desktop launcher and package manager for video editor (triM.), audio workstation (steM.), and RAW photo editor (beaM.) built in Rust.',
-        'hero-btn-download': 'Download v0.2.0 Packages',
+        'hero-btn-download': 'Download Packages',
         'hero-btn-repo': 'GitHub Repository',
         'spec-telemetry': 'Zero Telemetry',
         'spec-root': 'No Root Privileges Required',
@@ -628,7 +630,11 @@ cargo run --release -p prism-app</div>
         'build-cmd-title': 'Build Commands',
         'btn-copy': 'Copy',
         'footer-desc': 'Open-source desktop creative software suite for video, audio, and photo editing built in Rust by Murat Özçelik.',
-        'footer-repos': 'Repositories',
+        'footer-apps-title': 'Applications',
+        'footer-links-title': 'Project & Resources',
+        'footer-repo': 'GitHub Repository',
+        'footer-releases': 'All Releases',
+        'footer-issues': 'Issue Tracker',
         'footer-built': 'Built 100% with Rust and egui'
       }
     };
@@ -651,7 +657,6 @@ cargo run --release -p prism-app</div>
       document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         if (dict[key]) {
-          // If the element has child nodes like an svg, only replace the text node or inner span
           const span = el.querySelector('span');
           if (span) {
             span.textContent = dict[key];
@@ -662,15 +667,89 @@ cargo run --release -p prism-app</div>
       });
     }
 
+    // Dynamic release version updater via GitHub API
+    async function updateDynamicVersions() {
+      // 1. Fetch triM. latest release
+      fetch('https://api.github.com/repos/MOzcelik14/triM/releases/latest')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d && (d.tag_name || d.name)) {
+            const v = d.tag_name || d.name;
+            document.querySelectorAll('.trim-ver').forEach(el => el.textContent = v);
+          }
+        }).catch(() => {});
+
+      // 2. Fetch steM. latest release
+      fetch('https://api.github.com/repos/MOzcelik14/steM/releases/latest')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d && (d.tag_name || d.name)) {
+            const v = d.tag_name || d.name;
+            document.querySelectorAll('.stem-ver').forEach(el => el.textContent = v);
+          }
+        }).catch(() => {});
+
+      // 3. Fetch beaM. latest release
+      fetch('https://api.github.com/repos/MOzcelik14/beaM/releases/latest')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d && (d.tag_name || d.name)) {
+            const v = d.tag_name || d.name;
+            document.querySelectorAll('.beam-ver').forEach(el => el.textContent = v);
+          }
+        }).catch(() => {});
+
+      // 4. Fetch prisM. Suite latest release and update download links/commands
+      fetch('https://api.github.com/repos/MOzcelik14/prism-suite/releases/latest')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (!d) return;
+          const v = d.tag_name || d.name;
+          if (v) {
+            document.querySelectorAll('.prism-ver').forEach(el => el.textContent = v);
+          }
+          if (d.assets && Array.isArray(d.assets)) {
+            const deb = d.assets.find(a => a.name.endsWith('.deb'));
+            if (deb) {
+              const btn = document.getElementById('link-deb');
+              if (btn) btn.href = deb.browser_download_url;
+              const cmd = document.getElementById('deb-cmd');
+              if (cmd) cmd.textContent = `curl -LO ${deb.browser_download_url}\nsudo dpkg -i ${deb.name}`;
+            }
+            const rpm = d.assets.find(a => a.name.endsWith('.rpm'));
+            if (rpm) {
+              const btn = document.getElementById('link-rpm');
+              if (btn) btn.href = rpm.browser_download_url;
+              const cmd = document.getElementById('rpm-cmd');
+              if (cmd) cmd.textContent = `curl -LO ${rpm.browser_download_url}\nsudo dnf install ./${rpm.name}`;
+            }
+            const appimage = d.assets.find(a => a.name.endsWith('.AppImage'));
+            if (appimage) {
+              const btn = document.getElementById('link-appimage');
+              if (btn) btn.href = appimage.browser_download_url;
+              const cmd = document.getElementById('appimage-cmd');
+              if (cmd) cmd.textContent = `curl -LO ${appimage.browser_download_url}\nchmod +x ${appimage.name}\n./${appimage.name}`;
+            }
+            const win = d.assets.find(a => a.name.endsWith('.zip'));
+            if (win) {
+              const btn = document.getElementById('link-win');
+              if (btn) btn.href = win.browser_download_url;
+              const cmd = document.getElementById('win-cmd');
+              if (cmd) cmd.textContent = `Invoke-WebRequest -Uri "${win.browser_download_url}" -OutFile "prism.zip"\nExpand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\\Programs\\prism"\n& "$env:LOCALAPPDATA\\Programs\\prism\\prism.exe"`;
+            }
+          }
+        }).catch(() => {});
+    }
+
     // Initialize language on page load
-    (function initLanguage() {
+    (function init() {
       const saved = localStorage.getItem('prism_lang');
       if (saved && translations[saved]) {
         setLanguage(saved);
       } else {
-        // Default to Turkish
         setLanguage('tr');
       }
+      updateDynamicVersions();
     })();
   </script>
 </body>
