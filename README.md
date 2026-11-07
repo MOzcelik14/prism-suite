@@ -49,15 +49,15 @@ The user interface embeds the DejaVu Sans typography engine directly into the co
 
 ## Downloads & Distribution Packages
 
-Pre-compiled production packages for version `0.2.0` are available on the [GitHub Releases](https://github.com/MOzcelik14/prism-suite/releases) page:
+Pre-compiled production packages for version `0.3.0` are available on the [GitHub Releases](https://github.com/MOzcelik14/prism-suite/releases) page:
 
 | Operating System | Package Type | Artifact | Architecture |
 | :--- | :--- | :--- | :--- |
-| **Debian / Ubuntu** | Native `.deb` | `prism_0.2.0_amd64.deb` | x86_64 |
-| **Fedora / RHEL** | Native `.rpm` | `prism-0.2.0-1.x86_64.rpm` | x86_64 |
-| **Generic Linux** | Portable `.AppImage` | `prism-0.2.0-x86_64.AppImage` | x86_64 |
-| **Generic Linux** | Portable `.tar.gz` | `prism-0.2.0-linux-x86_64.tar.gz` | x86_64 |
-| **Windows** | Portable `.zip` | `prism-0.2.0-windows-x86_64.zip` | x86_64 |
+| **Debian / Ubuntu** | Native `.deb` | `prism_0.3.0_amd64.deb` | x86_64 |
+| **Fedora / RHEL** | Native `.rpm` | `prism-0.3.0-1.x86_64.rpm` | x86_64 |
+| **Generic Linux** | Portable `.AppImage` | `prism-0.3.0-x86_64.AppImage` | x86_64 |
+| **Generic Linux** | Portable `.tar.gz` | `prism-0.3.0-linux-x86_64.tar.gz` | x86_64 |
+| **Windows** | Portable `.zip` | `prism-0.3.0-windows-x86_64.zip` | x86_64 |
 
 ---
 
@@ -67,7 +67,7 @@ Pre-compiled production packages for version `0.2.0` are available on the [GitHu
 
 ```bash
 # Download and install the package
-sudo dpkg -i prism_0.2.0_amd64.deb
+sudo dpkg -i prism_0.3.0_amd64.deb
 
 # Resolve any missing runtime dependencies
 sudo apt-get install -f
@@ -76,7 +76,7 @@ sudo apt-get install -f
 ### Fedora, CentOS, RHEL, and Rocky Linux (.rpm)
 
 ```bash
-sudo dnf install ./prism-0.2.0-1.x86_64.rpm
+sudo dnf install ./prism-0.3.0-1.x86_64.rpm
 ```
 
 ### Generic Linux (AppImage)
@@ -84,13 +84,13 @@ sudo dnf install ./prism-0.2.0-1.x86_64.rpm
 The AppImage package requires no installation and can be executed directly:
 
 ```bash
-chmod +x prism-0.2.0-x86_64.AppImage
-./prism-0.2.0-x86_64.AppImage
+chmod +x prism-0.3.0-x86_64.AppImage
+./prism-0.3.0-x86_64.AppImage
 ```
 
 ### Windows (Portable Zip)
 
-1. Extract `prism-0.2.0-windows-x86_64.zip` to a directory of your choice (e.g., `C:\Program Files\prism-suite` or a local user folder).
+1. Extract `prism-0.3.0-windows-x86_64.zip` to a directory of your choice (e.g., `C:\Program Files\prism-suite` or a local user folder).
 2. Execute `prism.exe`.
 3. Application shortcuts and directory junctions will be initialized automatically in `%LOCALAPPDATA%\prism-suite`.
 
@@ -125,7 +125,7 @@ prism-suite/
 ├── .github/workflows/
 │   ├── ci.yml           # Multi-platform CI pipeline (Linux, Windows, clippy, unit tests)
 │   └── release.yml      # Release artifact build and publishing workflow
-├── Cargo.toml           # Workspace configuration (version 0.2.0)
+├── Cargo.toml           # Workspace configuration (version 0.3.0)
 ├── LICENSE              # GNU General Public License v3.0
 └── README.md
 ```
