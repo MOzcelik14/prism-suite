@@ -1731,12 +1731,9 @@ impl PrismApp {
                     .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
                     .show(ui, |ui| {
                         ui.label(
-                            RichText::new(format!(
-                                "○ {}",
-                                self.i18n.text("status-in-development")
-                            ))
-                            .size(10.0_f32)
-                            .color(TEXT_MUTED),
+                            RichText::new(format!("○ {}", self.i18n.text("status-in-development")))
+                                .size(10.0_f32)
+                                .color(TEXT_MUTED),
                         );
                     });
             }
