@@ -48,13 +48,59 @@ pub fn remove_desktop_entry(app: &AppEntry) -> Result<(), DesktopError> {
 }
 
 #[cfg(target_os = "linux")]
+fn get_app_icon_png(app_id: prism_core::AppId) -> &'static [u8] {
+    match app_id {
+        prism_core::AppId::Trim => include_bytes!("../../../assets/apps/trim.png"),
+        prism_core::AppId::Stem => include_bytes!("../../../assets/apps/stem.png"),
+        prism_core::AppId::Beam => include_bytes!("../../../assets/apps/beam.png"),
+    }
+}
+
+#[cfg(target_os = "linux")]
 fn linux_applications_dir() -> Result<PathBuf, DesktopError> {
     let base = BaseDirs::new().ok_or(DesktopError::NoUserDirs)?;
     Ok(base.data_local_dir().join("applications"))
 }
 
 #[cfg(target_os = "linux")]
+fn linux_icon_paths(app_id: prism_core::AppId) -> Result<(PathBuf, PathBuf), DesktopError> {
+    let base = BaseDirs::new().ok_or(DesktopError::NoUserDirs)?;
+    let hicolor_dir = base
+        .data_local_dir()
+        .join("icons")
+        .join("hicolor")
+        .join("256x256")
+        .join("apps");
+    let pixmaps_dir = base.data_local_dir().join("pixmaps");
+    let filename = format!("prism-{}.png", app_id.as_str());
+    Ok((hicolor_dir.join(&filename), pixmaps_dir.join(&filename)))
+}
+
+#[cfg(target_os = "linux")]
 fn install_linux_desktop_file(app: &AppEntry, binary_path: &Path) -> Result<(), DesktopError> {
+    use std::os::unix::fs::PermissionsExt;
+
+    // Ensure target binary is executable if it exists
+    if binary_path.exists() {
+        let _ = fs::set_permissions(binary_path, fs::Permissions::from_mode(0o755));
+    }
+
+    // Determine working directory (parent of binary)
+    let working_dir = binary_path.parent().unwrap_or_else(|| Path::new("/"));
+
+    // Install icon to both hicolor theme and pixmaps
+    let (hicolor_icon, pixmaps_icon) = linux_icon_paths(app.id)?;
+    if let Some(parent) = hicolor_icon.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    if let Some(parent) = pixmaps_icon.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    let icon_bytes = get_app_icon_png(app.id);
+    let _ = fs::write(&hicolor_icon, icon_bytes);
+    let _ = fs::write(&pixmaps_icon, icon_bytes);
+
+    // Prepare desktop file
     let apps_dir = linux_applications_dir()?;
     fs::create_dir_all(&apps_dir)?;
 
@@ -75,16 +121,34 @@ fn install_linux_desktop_file(app: &AppEntry, binary_path: &Path) -> Result<(), 
          GenericName={}\n\
          Comment=Part of prisM. Suite\n\
          Exec=\"{}\" %F\n\
+         Path={}\n\
+         Icon={}\n\
          Terminal=false\n\
          Categories={}\n\
-         StartupNotify=true\n",
+         StartupNotify=true\n\
+         StartupWMClass={}\n",
         app.display_name,
         app.category,
         binary_path.display(),
-        category_str
+        working_dir.display(),
+        hicolor_icon.display(),
+        category_str,
+        app.primary_binary_name
     );
 
-    fs::write(desktop_file_path, content)?;
+    fs::write(&desktop_file_path, &content)?;
+    let _ = fs::set_permissions(&desktop_file_path, fs::Permissions::from_mode(0o755));
+
+    // Also update ~/Desktop/prism-{id}.desktop if it already exists
+    if let Some(base) = BaseDirs::new() {
+        let user_desktop = base.home_dir().join("Desktop");
+        let desktop_shortcut = user_desktop.join(format!("prism-{}.desktop", app.id.as_str()));
+        if desktop_shortcut.exists() {
+            let _ = fs::write(&desktop_shortcut, &content);
+            let _ = fs::set_permissions(&desktop_shortcut, fs::Permissions::from_mode(0o755));
+        }
+    }
+
     Ok(())
 }
 
@@ -95,6 +159,24 @@ fn remove_linux_desktop_file(app: &AppEntry) -> Result<(), DesktopError> {
     if desktop_file_path.exists() {
         let _ = fs::remove_file(desktop_file_path);
     }
+
+    if let Some(base) = BaseDirs::new() {
+        let user_desktop = base.home_dir().join("Desktop");
+        let desktop_shortcut = user_desktop.join(format!("prism-{}.desktop", app.id.as_str()));
+        if desktop_shortcut.exists() {
+            let _ = fs::remove_file(desktop_shortcut);
+        }
+    }
+
+    if let Ok((hicolor_icon, pixmaps_icon)) = linux_icon_paths(app.id) {
+        if hicolor_icon.exists() {
+            let _ = fs::remove_file(hicolor_icon);
+        }
+        if pixmaps_icon.exists() {
+            let _ = fs::remove_file(pixmaps_icon);
+        }
+    }
+
     Ok(())
 }
 
@@ -132,8 +214,18 @@ mod tests {
         let content = fs::read_to_string(&file_path).unwrap();
         assert!(content.contains("Name=triM."));
         assert!(content.contains("Exec=\"/opt/prism/apps/trim/current/trim\" %F"));
+        assert!(content.contains("Path=/opt/prism/apps/trim/current"));
+        assert!(content.contains("Icon="));
+        assert!(content.contains("prism-trim.png"));
+        assert!(content.contains("StartupWMClass=trim"));
+
+        let (hicolor_icon, pixmaps_icon) = linux_icon_paths(trim.id).unwrap();
+        assert!(hicolor_icon.exists());
+        assert!(pixmaps_icon.exists());
 
         let _ = remove_linux_desktop_file(trim);
         assert!(!file_path.exists());
+        assert!(!hicolor_icon.exists());
+        assert!(!pixmaps_icon.exists());
     }
 }

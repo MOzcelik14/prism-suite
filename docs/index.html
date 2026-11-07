@@ -112,7 +112,7 @@
 
           <div class="app-card-name-row">
             <h3 class="app-card-name">triM.</h3>
-            <span class="app-version-tag trim-ver">v1.3.0</span>
+            <span class="app-version-tag trim-ver">v1.3.4</span>
           </div>
           <div class="app-card-tagline" data-i18n="trim-tagline">
             Hafif ve modern doğrusal olmayan video düzenleyici
@@ -153,7 +153,7 @@
 
           <div class="app-card-name-row">
             <h3 class="app-card-name">steM.</h3>
-            <span class="app-version-tag stem-ver">v0.1.1</span>
+            <span class="app-version-tag stem-ver">v0.1.5</span>
           </div>
           <div class="app-card-tagline" data-i18n="stem-tagline">
             Çok kanallı ses çalışma istasyonu ve dalga formu düzenleyici
@@ -194,7 +194,7 @@
 
           <div class="app-card-name-row">
             <h3 class="app-card-name">beaM.</h3>
-            <span class="app-version-tag beam-ver">v0.1.1</span>
+            <span class="app-version-tag beam-ver">v0.2.0</span>
           </div>
           <div class="app-card-tagline" data-i18n="beam-tagline">
             Tahribatsız RAW fotoğraf düzenleyici ve kütüphane yöneticisi
@@ -667,46 +667,75 @@ cargo run --release -p prism-app</div>
       });
     }
 
+    // Helper to format version string with 'v' prefix
+    function fmtVer(raw) {
+      if (!raw) return '';
+      const s = String(raw).trim();
+      return s.startsWith('v') ? s : 'v' + s;
+    }
+
+    // Apply stored versions immediately on load before any network latency
+    function applySavedVersions() {
+      try {
+        const t = localStorage.getItem('prism_trim_ver');
+        if (t) document.querySelectorAll('.trim-ver').forEach(el => el.textContent = t);
+        const s = localStorage.getItem('prism_stem_ver');
+        if (s) document.querySelectorAll('.stem-ver').forEach(el => el.textContent = s);
+        const b = localStorage.getItem('prism_beam_ver');
+        if (b) document.querySelectorAll('.beam-ver').forEach(el => el.textContent = b);
+        const p = localStorage.getItem('prism_suite_ver');
+        if (p) document.querySelectorAll('.prism-ver').forEach(el => el.textContent = p);
+      } catch (e) {}
+    }
+
     // Dynamic release version updater via GitHub API
     async function updateDynamicVersions() {
+      const fetchOpts = {
+        headers: { 'Accept': 'application/vnd.github.v3+json' }
+      };
+
       // 1. Fetch triM. latest release
-      fetch('https://api.github.com/repos/MOzcelik14/triM/releases/latest')
+      fetch('https://api.github.com/repos/MOzcelik14/triM/releases/latest', fetchOpts)
         .then(r => r.ok ? r.json() : null)
         .then(d => {
           if (d && (d.tag_name || d.name)) {
-            const v = d.tag_name || d.name;
+            const v = fmtVer(d.tag_name || d.name);
             document.querySelectorAll('.trim-ver').forEach(el => el.textContent = v);
+            try { localStorage.setItem('prism_trim_ver', v); } catch (e) {}
           }
         }).catch(() => {});
 
       // 2. Fetch steM. latest release
-      fetch('https://api.github.com/repos/MOzcelik14/steM/releases/latest')
+      fetch('https://api.github.com/repos/MOzcelik14/steM/releases/latest', fetchOpts)
         .then(r => r.ok ? r.json() : null)
         .then(d => {
           if (d && (d.tag_name || d.name)) {
-            const v = d.tag_name || d.name;
+            const v = fmtVer(d.tag_name || d.name);
             document.querySelectorAll('.stem-ver').forEach(el => el.textContent = v);
+            try { localStorage.setItem('prism_stem_ver', v); } catch (e) {}
           }
         }).catch(() => {});
 
       // 3. Fetch beaM. latest release
-      fetch('https://api.github.com/repos/MOzcelik14/beaM/releases/latest')
+      fetch('https://api.github.com/repos/MOzcelik14/beaM/releases/latest', fetchOpts)
         .then(r => r.ok ? r.json() : null)
         .then(d => {
           if (d && (d.tag_name || d.name)) {
-            const v = d.tag_name || d.name;
+            const v = fmtVer(d.tag_name || d.name);
             document.querySelectorAll('.beam-ver').forEach(el => el.textContent = v);
+            try { localStorage.setItem('prism_beam_ver', v); } catch (e) {}
           }
         }).catch(() => {});
 
       // 4. Fetch prisM. Suite latest release and update download links/commands
-      fetch('https://api.github.com/repos/MOzcelik14/prism-suite/releases/latest')
+      fetch('https://api.github.com/repos/MOzcelik14/prism-suite/releases/latest', fetchOpts)
         .then(r => r.ok ? r.json() : null)
         .then(d => {
           if (!d) return;
-          const v = d.tag_name || d.name;
+          const v = fmtVer(d.tag_name || d.name);
           if (v) {
             document.querySelectorAll('.prism-ver').forEach(el => el.textContent = v);
+            try { localStorage.setItem('prism_suite_ver', v); } catch (e) {}
           }
           if (d.assets && Array.isArray(d.assets)) {
             const deb = d.assets.find(a => a.name.endsWith('.deb'));
@@ -741,7 +770,7 @@ cargo run --release -p prism-app</div>
         }).catch(() => {});
     }
 
-    // Initialize language on page load
+    // Initialize language and versions on page load
     (function init() {
       const saved = localStorage.getItem('prism_lang');
       if (saved && translations[saved]) {
@@ -749,6 +778,7 @@ cargo run --release -p prism-app</div>
       } else {
         setLanguage('tr');
       }
+      applySavedVersions();
       updateDynamicVersions();
     })();
   </script>

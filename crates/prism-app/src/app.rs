@@ -1430,7 +1430,7 @@ impl PrismApp {
                 });
 
         let mut clicked_details = false;
-        let card_height = 360.0_f32;
+        let card_height = 300.0_f32;
 
         let accent_col = match app.id {
             AppId::Trim => ACCENT_CYAN,
@@ -1439,151 +1439,21 @@ impl PrismApp {
         };
 
         let card_resp = ui.allocate_ui(vec2(card_width, card_height), |ui| {
+            ui.set_min_size(vec2(card_width, card_height));
+            ui.set_max_size(vec2(card_width, card_height));
+
             egui::Frame::none()
                 .fill(BG_CARD)
                 .rounding(Rounding::same(8.0_f32))
                 .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
-                .inner_margin(egui::Margin::symmetric(18.0_f32, 16.0_f32))
+                .inner_margin(egui::Margin::symmetric(16.0_f32, 14.0_f32))
                 .show(ui, |ui| {
-                    ui.vertical(|ui| {
-                        // Top Strip: Index pill + GitHub link (ArtCraft style)
-                        ui.horizontal(|ui| {
-                            egui::Frame::none()
-                                .fill(accent_col.linear_multiply(0.18_f32))
-                                .stroke(Stroke::new(1.0_f32, accent_col.linear_multiply(0.4_f32)))
-                                .rounding(Rounding::same(4.0_f32))
-                                .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
-                                .show(ui, |ui| {
-                                    ui.label(
-                                        RichText::new(format!("{:02}", index_num))
-                                            .size(11.0_f32)
-                                            .strong()
-                                            .color(accent_col),
-                                    );
-                                });
+                    ui.set_min_size(vec2(card_width - 32.0_f32, card_height - 28.0_f32));
+                    ui.set_max_size(vec2(card_width - 32.0_f32, card_height - 28.0_f32));
 
-                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                if ui
-                                    .hyperlink_to(
-                                        RichText::new("GitHub ↗").size(12.0_f32).color(TEXT_MUTED),
-                                        &app.repository,
-                                    )
-                                    .clicked()
-                                {}
-                            });
-                        });
-
-                        ui.add_space(8.0_f32);
-                        ui.separator();
-                        ui.add_space(10.0_f32);
-
-                        // App Icon + Title + Subtitle
-                        ui.horizontal(|ui| {
-                            let icon_size = vec2(58.0_f32, 58.0_f32);
-                            if let Some(tex) = self.app_textures.get(&app.id) {
-                                ui.add(
-                                    egui::Image::new((tex.id(), icon_size))
-                                        .rounding(Rounding::same(10.0_f32)),
-                                );
-                            } else {
-                                let (icon_rect, _) =
-                                    ui.allocate_exact_size(icon_size, egui::Sense::hover());
-                                draw_app_icon(ui.painter(), icon_rect, app.id);
-                            }
-
-                            ui.add_space(12.0_f32);
-
-                            ui.vertical(|ui| {
-                                ui.label(
-                                    RichText::new(&app.display_name)
-                                        .size(20.0_f32)
-                                        .strong()
-                                        .color(TEXT_PRIMARY),
-                                );
-
-                                let cat_name = match app.id {
-                                    AppId::Trim => self.i18n.text("category-trim"),
-                                    AppId::Stem => self.i18n.text("category-stem"),
-                                    AppId::Beam => self.i18n.text("category-beam"),
-                                };
-                                ui.label(RichText::new(cat_name).size(12.0_f32).color(TEXT_MUTED));
-
-                                let comparison = match app.id {
-                                    AppId::Trim => self.i18n.text("compare-trim"),
-                                    AppId::Stem => self.i18n.text("compare-stem"),
-                                    AppId::Beam => self.i18n.text("compare-beam"),
-                                };
-                                ui.label(
-                                    RichText::new(comparison)
-                                        .size(11.0_f32)
-                                        .italics()
-                                        .color(TEXT_MUTED.linear_multiply(0.85_f32)),
-                                );
-                            });
-                        });
-
-                        ui.add_space(12.0_f32);
-
-                        // Status Badge
-                        ui.horizontal(|ui| {
-                            self.render_grid_status_badge(ui, &current_state);
-                        });
-
-                        ui.add_space(4.0_f32);
-
-                        // Version line
-                        let version_str = match &current_state {
-                            AppInstallState::NotInstalled { latest_release } => {
-                                if let Some(r) = latest_release {
-                                    self.i18n.text_with_arg(
-                                        "version-current",
-                                        "version",
-                                        &r.version.to_string(),
-                                    )
-                                } else {
-                                    self.i18n.text("status-in-development")
-                                }
-                            }
-                            AppInstallState::NoReleaseAvailable => {
-                                self.i18n.text("status-in-development")
-                            }
-                            AppInstallState::Installed { version, .. } => {
-                                self.i18n
-                                    .text_with_arg("version-installed", "version", version)
-                            }
-                            AppInstallState::UpdateAvailable { latest_release, .. } => {
-                                self.i18n.text_with_arg(
-                                    "version-new-available",
-                                    "version",
-                                    &latest_release.version.to_string(),
-                                )
-                            }
-                            AppInstallState::Downloading { .. } => {
-                                self.i18n.text("status-downloading")
-                            }
-                            AppInstallState::Verifying => self.i18n.text("status-verifying"),
-                            AppInstallState::Installing => self.i18n.text("status-installing"),
-                            AppInstallState::Running => self.i18n.text("status-running"),
-                            AppInstallState::Error { message } => {
-                                self.i18n
-                                    .text_with_arg("status-error-msg", "message", message)
-                            }
-                        };
-
-                        ui.label(RichText::new(version_str).size(11.5_f32).color(TEXT_MUTED));
-
-                        ui.add_space(8.0_f32);
-
-                        // Tagline
-                        ui.label(
-                            RichText::new(self.i18n.text(&app.tagline_key))
-                                .size(12.0_f32)
-                                .color(Color32::from_rgb(203, 213, 225)),
-                        );
-
-                        ui.add_space(14.0_f32);
-
-                        // Bottom Actions (pinned)
+                    // Use bottom_up so action buttons are strictly pinned to the bottom baseline
+                    ui.with_layout(Layout::bottom_up(Align::Min), |ui| {
+                        // 1. Bottom Actions (guaranteed to align horizontally across all cards)
                         if let AppInstallState::Downloading { progress, .. } = current_state {
                             ui.vertical(|ui| {
                                 ui.add(
@@ -1600,7 +1470,7 @@ impl PrismApp {
                         } else {
                             ui.horizontal(|ui| {
                                 let primary_btn_w =
-                                    (ui.available_width() - 86.0_f32).max(100.0_f32);
+                                    (ui.available_width() - 84.0_f32).max(100.0_f32);
 
                                 self.render_grid_primary_action(
                                     ui,
@@ -1614,13 +1484,153 @@ impl PrismApp {
                                 )
                                 .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
                                 .rounding(Rounding::same(6.0_f32))
-                                .min_size(vec2(78.0_f32, 34.0_f32));
+                                .min_size(vec2(76.0_f32, 34.0_f32));
 
                                 if ui.add(details_btn).clicked() {
                                     clicked_details = true;
                                 }
                             });
                         }
+
+                        ui.add_space(10.0_f32);
+
+                        // 2. Main content placed top-down in remaining space
+                        ui.with_layout(Layout::top_down(Align::Min), |ui| {
+                            // Top Strip: Index pill + GitHub link
+                            ui.horizontal(|ui| {
+                                egui::Frame::none()
+                                    .fill(accent_col.linear_multiply(0.16_f32))
+                                    .stroke(Stroke::new(
+                                        1.0_f32,
+                                        accent_col.linear_multiply(0.35_f32),
+                                    ))
+                                    .rounding(Rounding::same(4.0_f32))
+                                    .inner_margin(egui::Margin::symmetric(6.0_f32, 2.0_f32))
+                                    .show(ui, |ui| {
+                                        ui.label(
+                                            RichText::new(format!("{:02}", index_num))
+                                                .size(11.0_f32)
+                                                .strong()
+                                                .color(accent_col),
+                                        );
+                                    });
+
+                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                    if ui
+                                        .hyperlink_to(
+                                            RichText::new("GitHub ↗")
+                                                .size(11.5_f32)
+                                                .color(TEXT_MUTED),
+                                            &app.repository,
+                                        )
+                                        .clicked()
+                                    {}
+                                });
+                            });
+
+                            ui.add_space(6.0_f32);
+                            ui.separator();
+                            ui.add_space(8.0_f32);
+
+                            // App Icon + Title + Category + Comparison
+                            ui.horizontal(|ui| {
+                                let icon_size = vec2(48.0_f32, 48.0_f32);
+                                if let Some(tex) = self.app_textures.get(&app.id) {
+                                    ui.add(
+                                        egui::Image::new((tex.id(), icon_size))
+                                            .rounding(Rounding::same(8.0_f32)),
+                                    );
+                                } else {
+                                    let (icon_rect, _) =
+                                        ui.allocate_exact_size(icon_size, egui::Sense::hover());
+                                    draw_app_icon(ui.painter(), icon_rect, app.id);
+                                }
+
+                                ui.add_space(10.0_f32);
+
+                                ui.vertical(|ui| {
+                                    ui.label(
+                                        RichText::new(&app.display_name)
+                                            .size(18.0_f32)
+                                            .strong()
+                                            .color(TEXT_PRIMARY),
+                                    );
+
+                                    let cat_name = match app.id {
+                                        AppId::Trim => self.i18n.text("category-trim"),
+                                        AppId::Stem => self.i18n.text("category-stem"),
+                                        AppId::Beam => self.i18n.text("category-beam"),
+                                    };
+                                    ui.label(
+                                        RichText::new(cat_name).size(11.5_f32).color(TEXT_MUTED),
+                                    );
+
+                                    let comparison = match app.id {
+                                        AppId::Trim => self.i18n.text("compare-trim"),
+                                        AppId::Stem => self.i18n.text("compare-stem"),
+                                        AppId::Beam => self.i18n.text("compare-beam"),
+                                    };
+                                    ui.label(
+                                        RichText::new(comparison)
+                                            .size(10.5_f32)
+                                            .italics()
+                                            .color(TEXT_MUTED.linear_multiply(0.85_f32)),
+                                    );
+                                });
+                            });
+
+                            ui.add_space(8.0_f32);
+
+                            // Status Badge & Version in single horizontal line
+                            ui.horizontal(|ui| {
+                                self.render_grid_status_badge(ui, &current_state);
+
+                                let version_str = match &current_state {
+                                    AppInstallState::NotInstalled { latest_release } => {
+                                        if let Some(r) = latest_release {
+                                            format!("v{}", r.version)
+                                        } else {
+                                            String::new()
+                                        }
+                                    }
+                                    AppInstallState::NoReleaseAvailable => String::new(),
+                                    AppInstallState::Installed { version, .. } => {
+                                        format!("v{}", version)
+                                    }
+                                    AppInstallState::UpdateAvailable { latest_release, .. } => {
+                                        format!("→ v{}", latest_release.version)
+                                    }
+                                    AppInstallState::Downloading { .. } => String::new(),
+                                    AppInstallState::Verifying => String::new(),
+                                    AppInstallState::Installing => String::new(),
+                                    AppInstallState::Running => String::new(),
+                                    AppInstallState::Error { message } => message.clone(),
+                                };
+
+                                if !version_str.is_empty() {
+                                    ui.add_space(4.0_f32);
+                                    ui.label(
+                                        RichText::new(version_str).size(11.0_f32).color(TEXT_MUTED),
+                                    );
+                                }
+                            });
+
+                            ui.add_space(6.0_f32);
+
+                            // Fixed-height container for tagline so line wrap never causes unevenness
+                            let avail_w = ui.available_width();
+                            ui.allocate_ui_with_layout(
+                                vec2(avail_w, 32.0_f32),
+                                Layout::top_down(Align::Min),
+                                |ui| {
+                                    ui.label(
+                                        RichText::new(self.i18n.text(&app.tagline_key))
+                                            .size(11.5_f32)
+                                            .color(Color32::from_rgb(180, 195, 212)),
+                                    );
+                                },
+                            );
+                        });
                     });
                 });
         });
@@ -1628,17 +1638,45 @@ impl PrismApp {
         let card_rect = card_resp.response.rect;
         let is_hovered = ui.rect_contains_pointer(card_rect);
 
+        // Permanent subtle top hairline accent for rockhard identity
+        let top_bar = egui::Rect::from_min_size(card_rect.min, vec2(card_rect.width(), 2.0_f32));
+        let top_col = if is_hovered {
+            accent_col
+        } else {
+            accent_col.linear_multiply(0.35_f32)
+        };
+        ui.painter().rect_filled(
+            top_bar,
+            Rounding {
+                nw: 8.0_f32,
+                ne: 8.0_f32,
+                sw: 0.0_f32,
+                se: 0.0_f32,
+            },
+            top_col,
+        );
+
+        // Subtle gradient background behind header
+        let glow_rect = egui::Rect::from_min_size(card_rect.min, vec2(card_rect.width(), 65.0_f32));
+        let glow_alpha = if is_hovered { 0.08_f32 } else { 0.03_f32 };
+        ui.painter().rect_filled(
+            glow_rect,
+            Rounding {
+                nw: 8.0_f32,
+                ne: 8.0_f32,
+                sw: 0.0_f32,
+                se: 0.0_f32,
+            },
+            accent_col.linear_multiply(glow_alpha),
+        );
+
         if is_hovered {
-            // Draw glowing border & top hairline accent wipe
+            // Draw glowing border on hover
             ui.painter().rect_stroke(
                 card_rect,
                 Rounding::same(8.0_f32),
-                Stroke::new(1.0_f32, accent_col.linear_multiply(0.6_f32)),
+                Stroke::new(1.0_f32, accent_col.linear_multiply(0.65_f32)),
             );
-            let top_bar =
-                egui::Rect::from_min_size(card_rect.min, vec2(card_rect.width(), 2.0_f32));
-            ui.painter()
-                .rect_filled(top_bar, Rounding::same(1.0_f32), accent_col);
         }
 
         if clicked_details {
@@ -2532,274 +2570,412 @@ impl PrismApp {
 
     fn render_settings_window(&mut self, ctx: &egui::Context) {
         let mut open = self.show_settings;
+        let mut request_close = false;
+
         Window::new(self.i18n.text("settings-title"))
             .open(&mut open)
             .collapsible(false)
             .resizable(false)
             .anchor(Align2::CENTER_CENTER, vec2(0.0_f32, 0.0_f32))
-            .default_width(440.0_f32)
+            .default_width(460.0_f32)
             .show(ctx, |ui| {
+                ui.add_space(4.0_f32);
+
+                // Section 1: GENEL / GENERAL
+                egui::Frame::none()
+                    .fill(BG_CARD)
+                    .rounding(Rounding::same(6.0_f32))
+                    .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
+                    .inner_margin(egui::Margin::symmetric(14.0_f32, 10.0_f32))
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label(
+                                RichText::new(self.i18n.text("settings-language"))
+                                    .size(13.0_f32)
+                                    .strong()
+                                    .color(TEXT_PRIMARY),
+                            );
+
+                            let current_lang = self.i18n.language();
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                let tr_active = current_lang == Language::Turkish;
+                                let tr_btn = Button::new(
+                                    RichText::new(self.i18n.text("settings-language-tr"))
+                                        .size(12.0_f32)
+                                        .strong()
+                                        .color(if tr_active {
+                                            Color32::WHITE
+                                        } else {
+                                            TEXT_MUTED
+                                        }),
+                                )
+                                .fill(if tr_active {
+                                    ACCENT_INDIGO
+                                } else {
+                                    Color32::from_rgb(26, 32, 44)
+                                })
+                                .stroke(Stroke::new(
+                                    1.0_f32,
+                                    if tr_active {
+                                        ACCENT_INDIGO
+                                    } else {
+                                        BORDER_COLOR
+                                    },
+                                ))
+                                .rounding(Rounding::same(4.0_f32))
+                                .min_size(vec2(72.0_f32, 26.0_f32));
+
+                                if ui.add(tr_btn).clicked() {
+                                    self.i18n.set_language(Language::Turkish);
+                                    self.config.language = Some("tr".to_string());
+                                    let _ = self.config.save();
+                                    let shared = SharedPreferences {
+                                        language: "tr".to_string(),
+                                        launcher_version: SUITE_VERSION.to_string(),
+                                    };
+                                    let _ = shared.save();
+                                }
+
+                                let en_active = current_lang == Language::English;
+                                let en_btn = Button::new(
+                                    RichText::new(self.i18n.text("settings-language-en"))
+                                        .size(12.0_f32)
+                                        .strong()
+                                        .color(if en_active {
+                                            Color32::WHITE
+                                        } else {
+                                            TEXT_MUTED
+                                        }),
+                                )
+                                .fill(if en_active {
+                                    ACCENT_INDIGO
+                                } else {
+                                    Color32::from_rgb(26, 32, 44)
+                                })
+                                .stroke(Stroke::new(
+                                    1.0_f32,
+                                    if en_active {
+                                        ACCENT_INDIGO
+                                    } else {
+                                        BORDER_COLOR
+                                    },
+                                ))
+                                .rounding(Rounding::same(4.0_f32))
+                                .min_size(vec2(72.0_f32, 26.0_f32));
+
+                                if ui.add(en_btn).clicked() {
+                                    self.i18n.set_language(Language::English);
+                                    self.config.language = Some("en".to_string());
+                                    let _ = self.config.save();
+                                    let shared = SharedPreferences {
+                                        language: "en".to_string(),
+                                        launcher_version: SUITE_VERSION.to_string(),
+                                    };
+                                    let _ = shared.save();
+                                }
+                            });
+                        });
+                    });
+
                 ui.add_space(8.0_f32);
 
-                // Language selection
-                ui.label(
-                    RichText::new(self.i18n.text("settings-language"))
-                        .strong()
-                        .color(TEXT_PRIMARY),
-                );
-                ui.add_space(4.0_f32);
+                // Section 2: GÜNCELLEMELER / UPDATES
+                egui::Frame::none()
+                    .fill(BG_CARD)
+                    .rounding(Rounding::same(6.0_f32))
+                    .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
+                    .inner_margin(egui::Margin::symmetric(14.0_f32, 12.0_f32))
+                    .show(ui, |ui| {
+                        // Release channel
+                        ui.horizontal(|ui| {
+                            ui.label(
+                                RichText::new(self.i18n.text("settings-channel"))
+                                    .size(12.5_f32)
+                                    .strong()
+                                    .color(TEXT_PRIMARY),
+                            );
 
-                let current_lang = self.i18n.language();
-                ui.horizontal(|ui| {
-                    if ui
-                        .selectable_label(
-                            current_lang == Language::English,
-                            self.i18n.text("settings-language-en"),
-                        )
-                        .clicked()
-                    {
-                        self.i18n.set_language(Language::English);
-                        self.config.language = Some("en".to_string());
-                        let _ = self.config.save();
+                            let current_channel = self.config.release_channel;
+                            let mut channel_changed = false;
 
-                        // Sync shared preferences
-                        let shared = SharedPreferences {
-                            language: "en".to_string(),
-                            launcher_version: SUITE_VERSION.to_string(),
-                        };
-                        let _ = shared.save();
-                    }
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                let beta_active = current_channel == ReleaseChannel::Beta;
+                                let beta_btn = Button::new(
+                                    RichText::new(self.i18n.text("settings-channel-beta"))
+                                        .size(11.5_f32)
+                                        .strong()
+                                        .color(if beta_active {
+                                            Color32::WHITE
+                                        } else {
+                                            TEXT_MUTED
+                                        }),
+                                )
+                                .fill(if beta_active {
+                                    ACCENT_INDIGO
+                                } else {
+                                    Color32::from_rgb(26, 32, 44)
+                                })
+                                .stroke(Stroke::new(
+                                    1.0_f32,
+                                    if beta_active {
+                                        ACCENT_INDIGO
+                                    } else {
+                                        BORDER_COLOR
+                                    },
+                                ))
+                                .rounding(Rounding::same(4.0_f32))
+                                .min_size(vec2(60.0_f32, 24.0_f32));
 
-                    if ui
-                        .selectable_label(
-                            current_lang == Language::Turkish,
-                            self.i18n.text("settings-language-tr"),
-                        )
-                        .clicked()
-                    {
-                        self.i18n.set_language(Language::Turkish);
-                        self.config.language = Some("tr".to_string());
-                        let _ = self.config.save();
+                                if ui.add(beta_btn).clicked() {
+                                    self.config.release_channel = ReleaseChannel::Beta;
+                                    channel_changed = true;
+                                }
 
-                        // Sync shared preferences
-                        let shared = SharedPreferences {
-                            language: "tr".to_string(),
-                            launcher_version: SUITE_VERSION.to_string(),
-                        };
-                        let _ = shared.save();
-                    }
-                });
+                                let stable_active = current_channel == ReleaseChannel::Stable;
+                                let stable_btn = Button::new(
+                                    RichText::new(self.i18n.text("settings-channel-stable"))
+                                        .size(11.5_f32)
+                                        .strong()
+                                        .color(if stable_active {
+                                            Color32::WHITE
+                                        } else {
+                                            TEXT_MUTED
+                                        }),
+                                )
+                                .fill(if stable_active {
+                                    ACCENT_INDIGO
+                                } else {
+                                    Color32::from_rgb(26, 32, 44)
+                                })
+                                .stroke(Stroke::new(
+                                    1.0_f32,
+                                    if stable_active {
+                                        ACCENT_INDIGO
+                                    } else {
+                                        BORDER_COLOR
+                                    },
+                                ))
+                                .rounding(Rounding::same(4.0_f32))
+                                .min_size(vec2(60.0_f32, 24.0_f32));
+
+                                if ui.add(stable_btn).clicked() {
+                                    self.config.release_channel = ReleaseChannel::Stable;
+                                    channel_changed = true;
+                                }
+                            });
+
+                            if channel_changed {
+                                let _ = self.config.save();
+                                self.check_for_updates(true);
+                            }
+                        });
+
+                        ui.add_space(8.0_f32);
+                        ui.separator();
+                        ui.add_space(8.0_f32);
+
+                        // Update check frequency
+                        ui.horizontal(|ui| {
+                            ui.label(
+                                RichText::new(self.i18n.text("settings-check-frequency"))
+                                    .size(12.5_f32)
+                                    .strong()
+                                    .color(TEXT_PRIMARY),
+                            );
+
+                            let current_freq = self.config.check_frequency;
+                            let mut freq_changed = false;
+
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                let freqs = [
+                                    (UpdateFrequency::Manual, "settings-freq-manual"),
+                                    (UpdateFrequency::Weekly, "settings-freq-weekly"),
+                                    (UpdateFrequency::Daily, "settings-freq-daily"),
+                                    (UpdateFrequency::EveryLaunch, "settings-freq-launch"),
+                                ];
+
+                                for (freq, label_key) in freqs {
+                                    let active = current_freq == freq;
+                                    let btn = Button::new(
+                                        RichText::new(self.i18n.text(label_key))
+                                            .size(11.0_f32)
+                                            .strong()
+                                            .color(if active {
+                                                Color32::WHITE
+                                            } else {
+                                                TEXT_MUTED
+                                            }),
+                                    )
+                                    .fill(if active {
+                                        ACCENT_INDIGO
+                                    } else {
+                                        Color32::from_rgb(26, 32, 44)
+                                    })
+                                    .stroke(Stroke::new(
+                                        1.0_f32,
+                                        if active { ACCENT_INDIGO } else { BORDER_COLOR },
+                                    ))
+                                    .rounding(Rounding::same(4.0_f32))
+                                    .min_size(vec2(52.0_f32, 24.0_f32));
+
+                                    if ui.add(btn).clicked() {
+                                        self.config.check_frequency = freq;
+                                        freq_changed = true;
+                                    }
+                                }
+                            });
+
+                            if freq_changed {
+                                let _ = self.config.save();
+                            }
+                        });
+
+                        ui.add_space(8.0_f32);
+                        ui.separator();
+                        ui.add_space(8.0_f32);
+
+                        // Checkboxes row
+                        ui.horizontal(|ui| {
+                            if ui
+                                .checkbox(
+                                    &mut self.config.auto_update,
+                                    RichText::new(self.i18n.text("settings-auto-update"))
+                                        .size(12.0_f32),
+                                )
+                                .changed()
+                            {
+                                let _ = self.config.save();
+                            }
+
+                            ui.add_space(16.0_f32);
+
+                            if ui
+                                .checkbox(
+                                    &mut self.config.check_updates_on_launch,
+                                    RichText::new(self.i18n.text("settings-check-updates-launch"))
+                                        .size(12.0_f32),
+                                )
+                                .changed()
+                            {
+                                let _ = self.config.save();
+                            }
+                        });
+
+                        ui.add_space(8.0_f32);
+                        ui.separator();
+                        ui.add_space(8.0_f32);
+
+                        // Keep versions
+                        ui.horizontal(|ui| {
+                            ui.label(
+                                RichText::new(self.i18n.text("settings-keep-versions"))
+                                    .size(12.5_f32)
+                                    .strong()
+                                    .color(TEXT_PRIMARY),
+                            );
+
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                if ui
+                                    .add(
+                                        DragValue::new(&mut self.config.keep_versions_count)
+                                            .range(1..=5)
+                                            .speed(0.1),
+                                    )
+                                    .changed()
+                                {
+                                    let _ = self.config.save();
+                                }
+                            });
+                        });
+                    });
+
+                ui.add_space(8.0_f32);
+
+                // Section 3: DEPOLAMA & DİZİN / INSTALLATION DIRECTORY
+                egui::Frame::none()
+                    .fill(BG_CARD)
+                    .rounding(Rounding::same(6.0_f32))
+                    .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
+                    .inner_margin(egui::Margin::symmetric(14.0_f32, 10.0_f32))
+                    .show(ui, |ui| {
+                        ui.label(
+                            RichText::new(self.i18n.text("settings-install-directory"))
+                                .size(12.5_f32)
+                                .strong()
+                                .color(TEXT_PRIMARY),
+                        );
+                        ui.add_space(4.0_f32);
+
+                        let dir_str = self
+                            .install_mgr
+                            .apps_root_dir()
+                            .map(|p| p.display().to_string())
+                            .unwrap_or_else(|_| "Default system app data directory".to_string());
+
+                        egui::Frame::none()
+                            .fill(Color32::from_rgb(15, 18, 24))
+                            .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
+                            .rounding(Rounding::same(4.0_f32))
+                            .inner_margin(egui::Margin::symmetric(8.0_f32, 6.0_f32))
+                            .show(ui, |ui| {
+                                ui.set_width(ui.available_width());
+                                ui.label(
+                                    RichText::new(&dir_str)
+                                        .monospace()
+                                        .size(11.0_f32)
+                                        .color(TEXT_MUTED),
+                                );
+                            });
+
+                        ui.add_space(6.0_f32);
+
+                        ui.horizontal(|ui| {
+                            let text_w = (ui.available_width() - 80.0_f32).max(120.0_f32);
+                            ui.add_sized(
+                                vec2(text_w, 28.0_f32),
+                                egui::TextEdit::singleline(&mut self.custom_dir_input)
+                                    .hint_text("Özel kurulum dizini girin..."),
+                            );
+
+                            let save_btn = Button::new(
+                                RichText::new(self.i18n.text("action-save"))
+                                    .size(12.0_f32)
+                                    .strong(),
+                            )
+                            .fill(ACCENT_INDIGO)
+                            .rounding(Rounding::same(4.0_f32))
+                            .min_size(vec2(70.0_f32, 28.0_f32));
+
+                            if ui.add(save_btn).clicked() {
+                                let trimmed = self.custom_dir_input.trim();
+                                if trimmed.is_empty() {
+                                    self.config.custom_install_dir = None;
+                                } else {
+                                    self.config.custom_install_dir = Some(PathBuf::from(trimmed));
+                                }
+                                let _ = self.config.save();
+                                self.install_mgr = InstallationManager::new(
+                                    self.config.custom_install_dir.clone(),
+                                );
+                            }
+                        });
+                    });
 
                 ui.add_space(14.0_f32);
-                ui.separator();
-                ui.add_space(14.0_f32);
-
-                // Release Channel selection
-                ui.label(
-                    RichText::new(self.i18n.text("settings-channel"))
-                        .strong()
-                        .color(TEXT_PRIMARY),
-                );
-                ui.add_space(4.0_f32);
-
-                let current_channel = self.config.release_channel;
-                let mut channel_changed = false;
-                ui.horizontal(|ui| {
-                    if ui
-                        .selectable_label(
-                            current_channel == ReleaseChannel::Stable,
-                            self.i18n.text("settings-channel-stable"),
-                        )
-                        .clicked()
-                    {
-                        self.config.release_channel = ReleaseChannel::Stable;
-                        channel_changed = true;
-                    }
-
-                    if ui
-                        .selectable_label(
-                            current_channel == ReleaseChannel::Beta,
-                            self.i18n.text("settings-channel-beta"),
-                        )
-                        .clicked()
-                    {
-                        self.config.release_channel = ReleaseChannel::Beta;
-                        channel_changed = true;
-                    }
-                });
-
-                if channel_changed {
-                    let _ = self.config.save();
-                    self.check_for_updates(true);
-                }
-
-                ui.add_space(14.0_f32);
-                ui.separator();
-                ui.add_space(14.0_f32);
-
-                // Keep versions setting
-                ui.horizontal(|ui| {
-                    ui.label(
-                        RichText::new(self.i18n.text("settings-keep-versions"))
-                            .strong()
-                            .color(TEXT_PRIMARY),
-                    );
-                    if ui
-                        .add(
-                            DragValue::new(&mut self.config.keep_versions_count)
-                                .range(1..=5)
-                                .speed(0.1),
-                        )
-                        .changed()
-                    {
-                        let _ = self.config.save();
-                    }
-                });
-
-                ui.add_space(14.0_f32);
-                ui.separator();
-                ui.add_space(14.0_f32);
-
-                // Update Check Frequency
-                ui.label(
-                    RichText::new(self.i18n.text("settings-check-frequency"))
-                        .strong()
-                        .color(TEXT_PRIMARY),
-                );
-                ui.add_space(4.0_f32);
-
-                let current_freq = self.config.check_frequency;
-                let mut freq_changed = false;
-                ui.horizontal(|ui| {
-                    if ui
-                        .selectable_label(
-                            current_freq == UpdateFrequency::EveryLaunch,
-                            self.i18n.text("settings-freq-launch"),
-                        )
-                        .clicked()
-                    {
-                        self.config.check_frequency = UpdateFrequency::EveryLaunch;
-                        freq_changed = true;
-                    }
-                    if ui
-                        .selectable_label(
-                            current_freq == UpdateFrequency::Daily,
-                            self.i18n.text("settings-freq-daily"),
-                        )
-                        .clicked()
-                    {
-                        self.config.check_frequency = UpdateFrequency::Daily;
-                        freq_changed = true;
-                    }
-                    if ui
-                        .selectable_label(
-                            current_freq == UpdateFrequency::Weekly,
-                            self.i18n.text("settings-freq-weekly"),
-                        )
-                        .clicked()
-                    {
-                        self.config.check_frequency = UpdateFrequency::Weekly;
-                        freq_changed = true;
-                    }
-                    if ui
-                        .selectable_label(
-                            current_freq == UpdateFrequency::Manual,
-                            self.i18n.text("settings-freq-manual"),
-                        )
-                        .clicked()
-                    {
-                        self.config.check_frequency = UpdateFrequency::Manual;
-                        freq_changed = true;
-                    }
-                });
-
-                if freq_changed {
-                    let _ = self.config.save();
-                }
-
-                ui.add_space(14.0_f32);
-                ui.separator();
-                ui.add_space(14.0_f32);
-
-                // Auto-update toggle
-                if ui
-                    .checkbox(
-                        &mut self.config.auto_update,
-                        self.i18n.text("settings-auto-update"),
-                    )
-                    .changed()
-                {
-                    let _ = self.config.save();
-                }
-
-                ui.add_space(14.0_f32);
-                ui.separator();
-                ui.add_space(14.0_f32);
-
-                // Check updates on startup checkbox
-                if ui
-                    .checkbox(
-                        &mut self.config.check_updates_on_launch,
-                        self.i18n.text("settings-check-updates-launch"),
-                    )
-                    .changed()
-                {
-                    let _ = self.config.save();
-                }
-
-                ui.add_space(14.0_f32);
-                ui.separator();
-                ui.add_space(14.0_f32);
-
-                // Install directory display and custom chooser
-                ui.label(
-                    RichText::new(self.i18n.text("settings-install-directory"))
-                        .strong()
-                        .color(TEXT_PRIMARY),
-                );
-                ui.add_space(4.0_f32);
-
-                let dir_str = self
-                    .install_mgr
-                    .apps_root_dir()
-                    .map(|p| p.display().to_string())
-                    .unwrap_or_else(|_| "Default system app data directory".to_string());
-
-                ui.label(
-                    RichText::new(
-                        self.i18n
-                            .text_with_arg("settings-current-dir", "dir", &dir_str),
-                    )
-                    .size(12.0_f32)
-                    .color(TEXT_MUTED),
-                );
-                ui.add_space(4.0_f32);
-
-                ui.horizontal(|ui| {
-                    ui.text_edit_singleline(&mut self.custom_dir_input);
-
-                    if ui.button(self.i18n.text("action-save")).clicked() {
-                        let trimmed = self.custom_dir_input.trim();
-                        if trimmed.is_empty() {
-                            self.config.custom_install_dir = None;
-                        } else {
-                            self.config.custom_install_dir = Some(PathBuf::from(trimmed));
-                        }
-                        let _ = self.config.save();
-                        self.install_mgr =
-                            InstallationManager::new(self.config.custom_install_dir.clone());
-                    }
-                });
-
-                ui.add_space(18.0_f32);
                 ui.separator();
                 ui.add_space(10.0_f32);
 
+                // Footer Row
                 ui.horizontal(|ui| {
-                    if ui
-                        .button(self.i18n.text("settings-reset-defaults"))
-                        .clicked()
-                    {
+                    let reset_btn = Button::new(
+                        RichText::new(self.i18n.text("settings-reset-defaults"))
+                            .size(11.5_f32)
+                            .color(TEXT_MUTED),
+                    )
+                    .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
+                    .rounding(Rounding::same(4.0_f32));
+
+                    if ui.add(reset_btn).clicked() {
                         self.config.reset_to_defaults();
                         let _ = self.config.save();
                         self.i18n.set_language(Language::English);
@@ -2813,12 +2989,26 @@ impl PrismApp {
                     }
 
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        if ui.button(self.i18n.text("action-close")).clicked() {
-                            self.show_settings = false;
+                        let close_btn = Button::new(
+                            RichText::new(self.i18n.text("action-close"))
+                                .size(12.5_f32)
+                                .strong()
+                                .color(Color32::WHITE),
+                        )
+                        .fill(ACCENT_INDIGO)
+                        .rounding(Rounding::same(4.0_f32))
+                        .min_size(vec2(80.0_f32, 30.0_f32));
+
+                        if ui.add(close_btn).clicked() {
+                            request_close = true;
                         }
                     });
                 });
             });
+
+        if request_close {
+            open = false;
+        }
         self.show_settings = open;
     }
 
@@ -2913,94 +3103,164 @@ impl PrismApp {
     }
 
     fn render_about_window(&mut self, ctx: &egui::Context) {
-        let about_logo = self.suite_logo_texture(ctx, 80.0_f32);
+        let about_logo = self.suite_logo_texture(ctx, 64.0_f32);
         let mut open = self.show_about;
+        let mut request_close = false;
+
         Window::new(self.i18n.text("about-title"))
             .open(&mut open)
             .collapsible(false)
             .resizable(false)
             .anchor(Align2::CENTER_CENTER, vec2(0.0_f32, 0.0_f32))
-            .default_width(420.0_f32)
+            .default_width(440.0_f32)
             .show(ctx, |ui| {
                 ui.add_space(8.0_f32);
 
+                // Branding Header
                 ui.vertical_centered(|ui| {
                     if let Some(tex_id) = about_logo {
-                        ui.image((tex_id, vec2(80.0_f32, 80.0_f32)));
+                        ui.image((tex_id, vec2(64.0_f32, 64.0_f32)));
                     } else {
                         let (logo_rect, _) =
-                            ui.allocate_exact_size(vec2(64.0_f32, 64.0_f32), egui::Sense::hover());
+                            ui.allocate_exact_size(vec2(56.0_f32, 56.0_f32), egui::Sense::hover());
                         draw_suite_logo(ui.painter(), logo_rect);
                     }
 
-                    ui.add_space(10.0_f32);
+                    ui.add_space(8.0_f32);
 
                     ui.label(
                         RichText::new(SUITE_DISPLAY_NAME)
-                            .size(22.0_f32)
+                            .size(20.0_f32)
                             .strong()
                             .color(TEXT_PRIMARY),
                     );
 
                     ui.label(
                         RichText::new(self.i18n.text("about-tagline"))
-                            .size(12.5_f32)
+                            .size(12.0_f32)
                             .color(TEXT_MUTED),
                     );
 
                     ui.add_space(6.0_f32);
 
-                    ui.label(
-                        RichText::new(format!(
-                            "{}: v{}",
-                            self.i18n.text("about-version"),
-                            SUITE_VERSION
-                        ))
-                        .size(12.0_f32)
-                        .color(ACCENT_CYAN),
-                    );
-
-                    ui.label(
-                        RichText::new(format!(
-                            "{}: {}",
-                            self.i18n.text("about-license"),
-                            SUITE_LICENSE
-                        ))
-                        .size(12.0_f32)
-                        .color(TEXT_MUTED),
-                    );
+                    // Version & License Pill
+                    egui::Frame::none()
+                        .fill(Color32::from_rgba_unmultiplied(56, 189, 248, 16))
+                        .stroke(Stroke::new(1.0_f32, ACCENT_CYAN.linear_multiply(0.35_f32)))
+                        .rounding(Rounding::same(12.0_f32))
+                        .inner_margin(egui::Margin::symmetric(10.0_f32, 4.0_f32))
+                        .show(ui, |ui| {
+                            ui.label(
+                                RichText::new(format!("v{}  •  {}", SUITE_VERSION, SUITE_LICENSE))
+                                    .size(11.5_f32)
+                                    .strong()
+                                    .color(ACCENT_CYAN),
+                            );
+                        });
                 });
 
                 ui.add_space(14.0_f32);
-                ui.separator();
-                ui.add_space(14.0_f32);
 
-                ui.label(
-                    RichText::new(self.i18n.text("about-source-code"))
-                        .strong()
-                        .color(TEXT_PRIMARY),
-                );
-                ui.hyperlink_to(self.i18n.text("about-launcher-repo"), LAUNCHER_REPO_URL);
-                ui.hyperlink_to(self.i18n.text("about-org-repo"), GITHUB_ORG_URL);
+                // Metadata Details Card
+                egui::Frame::none()
+                    .fill(BG_CARD)
+                    .rounding(Rounding::same(6.0_f32))
+                    .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
+                    .inner_margin(egui::Margin::symmetric(14.0_f32, 12.0_f32))
+                    .show(ui, |ui| {
+                        let rows = [
+                            ("Mimari", "x86_64 (Linux Native)"),
+                            ("Grafik Motoru", "wgpu / Vulkan / X11 & Wayland"),
+                            ("Geliştirici", "Murat Özçelik (@mozcelik14)"),
+                            ("Ekosistem", "triM. • steM. • beaM."),
+                        ];
 
-                ui.add_space(14.0_f32);
-                ui.separator();
+                        for (idx, (label, val)) in rows.iter().enumerate() {
+                            if idx > 0 {
+                                ui.add_space(4.0_f32);
+                                ui.separator();
+                                ui.add_space(4.0_f32);
+                            }
+                            ui.horizontal(|ui| {
+                                ui.label(RichText::new(*label).size(12.0_f32).color(TEXT_MUTED));
+                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                    ui.label(
+                                        RichText::new(*val)
+                                            .size(12.0_f32)
+                                            .strong()
+                                            .color(TEXT_PRIMARY),
+                                    );
+                                });
+                            });
+                        }
+                    });
+
                 ui.add_space(10.0_f32);
 
-                ui.label(
-                    RichText::new(self.i18n.text("about-copyright"))
-                        .size(11.0_f32)
-                        .color(TEXT_MUTED),
-                );
+                // Repository Links
+                ui.horizontal(|ui| {
+                    let half_w = (ui.available_width() - 8.0_f32) / 2.0_f32;
 
-                ui.add_space(14.0_f32);
+                    let repo_btn = Button::new(
+                        RichText::new(self.i18n.text("about-launcher-repo"))
+                            .size(11.5_f32)
+                            .color(ACCENT_CYAN),
+                    )
+                    .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
+                    .rounding(Rounding::same(4.0_f32))
+                    .min_size(vec2(half_w, 28.0_f32));
 
-                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if ui.button(self.i18n.text("action-close")).clicked() {
-                        self.show_about = false;
+                    if ui.add(repo_btn).clicked() {
+                        ui.ctx().open_url(egui::OpenUrl::new_tab(LAUNCHER_REPO_URL));
+                    }
+
+                    let org_btn = Button::new(
+                        RichText::new(self.i18n.text("about-org-repo"))
+                            .size(11.5_f32)
+                            .color(ACCENT_CYAN),
+                    )
+                    .stroke(Stroke::new(1.0_f32, BORDER_COLOR))
+                    .rounding(Rounding::same(4.0_f32))
+                    .min_size(vec2(half_w, 28.0_f32));
+
+                    if ui.add(org_btn).clicked() {
+                        ui.ctx().open_url(egui::OpenUrl::new_tab(GITHUB_ORG_URL));
                     }
                 });
+
+                ui.add_space(12.0_f32);
+                ui.separator();
+                ui.add_space(8.0_f32);
+
+                // Footer Row with Copyright & Close Button
+                ui.horizontal(|ui| {
+                    ui.label(
+                        RichText::new(self.i18n.text("about-copyright"))
+                            .size(11.0_f32)
+                            .color(TEXT_MUTED),
+                    );
+
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        let close_btn = Button::new(
+                            RichText::new(self.i18n.text("action-close"))
+                                .size(12.5_f32)
+                                .strong()
+                                .color(Color32::WHITE),
+                        )
+                        .fill(ACCENT_INDIGO)
+                        .rounding(Rounding::same(4.0_f32))
+                        .min_size(vec2(80.0_f32, 28.0_f32));
+
+                        if ui.add(close_btn).clicked() {
+                            request_close = true;
+                        }
+                    });
+                });
             });
+
+        if request_close {
+            open = false;
+        }
         self.show_about = open;
     }
 }
