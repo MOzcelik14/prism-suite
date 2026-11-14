@@ -31,7 +31,7 @@
   --radius-md: 12px;
   --radius-lg: 18px;
   --radius-xl: 24px;
-  --radius-full: 9999px;
+  --radius-xs: 6px;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -179,7 +179,7 @@ code, pre {
   display: inline-flex;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-xs);
   padding: 3px;
 }
 
@@ -190,7 +190,7 @@ code, pre {
   font-size: 0.78rem;
   font-weight: 600;
   padding: 4px 11px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-xs);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -210,7 +210,7 @@ code, pre {
   justify-content: center;
   gap: 8px;
   padding: 9px 18px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-xs);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -257,21 +257,20 @@ code, pre {
   position: relative;
 }
 
-.hero-pill {
+.hero-kicker {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
-  border-radius: var(--radius-full);
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(99, 102, 241, 0.28);
-  color: #c7d2fe;
-  font-size: 0.82rem;
-  font-weight: 500;
-  margin-bottom: 24px;
+  color: #a5b4fc;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 18px;
 }
 
-.hero-pill-dot {
+.hero-kicker-dot {
+  border-radius: 2px;
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -344,7 +343,7 @@ code, pre {
   align-items: center;
   gap: 8px;
   padding: 9px 18px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-xs);
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
@@ -484,8 +483,8 @@ section {
 
 .apps-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
 }
 
 .app-card {
@@ -556,7 +555,7 @@ section {
   font-size: 0.75rem;
   font-weight: 600;
   padding: 4px 11px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-xs);
   letter-spacing: 0.02em;
 }
 
@@ -585,7 +584,7 @@ section {
   background: rgba(34, 211, 238, 0.1);
   border: 1px solid rgba(34, 211, 238, 0.22);
   padding: 3px 9px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-xs);
 }
 
 .app-card-tagline {
@@ -782,7 +781,7 @@ section {
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
   padding: 4px 12px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-xs);
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
@@ -911,4 +910,27 @@ footer {
   section {
     padding: 52px 0;
   }
+}
+
+.app-card-shot {
+  margin: 0 0 18px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  background: #090b10;
+  aspect-ratio: 16 / 10;
+  cursor: pointer;
+}
+
+.app-card-shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+  transition: transform 0.45s var(--ease-out);
+}
+
+.app-card:hover .app-card-shot img {
+  transform: scale(1.03);
 }

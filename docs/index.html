@@ -52,8 +52,8 @@
   <!-- Hero Section -->
   <section class="hero">
     <div class="container">
-      <div class="hero-pill reveal">
-        <span class="hero-pill-dot"></span>
+      <div class="hero-kicker reveal">
+        <span class="hero-kicker-dot"></span>
         <span>prisM. Suite <span class="prism-ver">v1.0.0</span></span>
       </div>
 
@@ -98,13 +98,21 @@
   <section id="showcase" class="showcase-section">
     <div class="container">
       <div class="showcase-tabs reveal">
-        <button type="button" class="showcase-tab active" onclick="switchShowcase('trim', this)">
+        <button type="button" class="showcase-tab active" data-showcase="prism" onclick="switchShowcase('prism', this)">
+          <span>prisM. Suite</span>
+          <span class="prism-ver" style="opacity:0.75;font-family:var(--font-mono);font-size:0.78rem;">v1.0.0</span>
+        </button>
+        <button type="button" class="showcase-tab" data-showcase="trim" onclick="switchShowcase('trim', this)">
           <span>triM.</span>
           <span class="trim-ver" style="opacity:0.75;font-family:var(--font-mono);font-size:0.78rem;">v1.6.1</span>
         </button>
-        <button type="button" class="showcase-tab" onclick="switchShowcase('stem', this)">
+        <button type="button" class="showcase-tab" data-showcase="stem" onclick="switchShowcase('stem', this)">
           <span>steM.</span>
-          <span class="stem-ver" style="opacity:0.75;font-family:var(--font-mono);font-size:0.78rem;">v0.5.0</span>
+          <span class="stem-ver" style="opacity:0.75;font-family:var(--font-mono);font-size:0.78rem;">v0.5.1</span>
+        </button>
+        <button type="button" class="showcase-tab" data-showcase="beam" onclick="switchShowcase('beam', this)">
+          <span>beaM.</span>
+          <span class="beam-ver" style="opacity:0.75;font-family:var(--font-mono);font-size:0.78rem;">v1.0.0</span>
         </button>
       </div>
 
@@ -112,22 +120,28 @@
         <div class="showcase-inner">
           <div class="window-bar">
             <div class="window-dots"><span></span><span></span><span></span></div>
-            <div class="window-title" id="showcase-win-title">triM. — Video Studio</div>
+            <div class="window-title" id="showcase-win-title">prisM. Suite — Application Hub</div>
             <div style="width:42px;"></div>
           </div>
 
           <div class="showcase-stage">
-            <div class="showcase-panel active" id="panel-trim">
-              <img src="assets/screenshots/trim-workspace.png" alt="triM. çalışma alanı" loading="eager" />
+            <div class="showcase-panel active" id="panel-prism">
+              <img src="assets/screenshots/prism-launcher.png" alt="prisM. Suite arayüzü" loading="eager" />
+            </div>
+            <div class="showcase-panel" id="panel-trim">
+              <img src="assets/screenshots/trim-workspace.png" alt="triM. çalışma alanı" loading="lazy" />
             </div>
             <div class="showcase-panel" id="panel-stem">
               <img src="assets/screenshots/stem-studio.png" alt="steM. ses stüdyosu" loading="lazy" />
             </div>
+            <div class="showcase-panel" id="panel-beam">
+              <img src="assets/screenshots/beam-studio.png" alt="beaM. fotoğraf stüdyosu" loading="lazy" />
+            </div>
           </div>
 
           <div class="showcase-caption">
-            <span id="showcase-caption-text" data-i18n="caption-trim">Çok kanallı zaman çizelgesi, canlı renk tekerlekleri ve donanım hızlandırmalı dışa aktarma.</span>
-            <a id="showcase-caption-link" href="https://github.com/MOzcelik14/triM" target="_blank" rel="noopener" class="app-repo-link" data-i18n="link-explore">Detayları Gör</a>
+            <span id="showcase-caption-text" data-i18n="caption-prism">Tüm yaratıcı uygulamaları tek merkezden kurun, güncelleyin, eski sürüme dönün ve başlatın.</span>
+            <a id="showcase-caption-link" href="https://github.com/MOzcelik14/prism-suite" target="_blank" rel="noopener" class="app-repo-link" data-i18n="link-explore">Detayları Gör</a>
           </div>
         </div>
       </div>
@@ -138,15 +152,64 @@
   <section id="apps">
     <div class="container">
       <div class="section-header reveal">
-        <h2 class="section-title" data-i18n="apps-section-title">Pakette Neler Var?</h2>
+        <h2 class="section-title" data-i18n="apps-section-title">Ekosistemdeki Tüm Uygulamalar</h2>
         <p class="section-desc" data-i18n="apps-section-desc">
-          Her uygulama bilgisayarınızda doğrudan ve bağımsız çalışır. prisM. Suite ise tümünü tek tıkla kurup güncel tutmanızı sağlar.
+          Her uygulama bilgisayarınızda doğrudan ve bağımsız çalışır. Başlatıcı ve tüm yaratıcı araçları aşağıda inceleyebilirsiniz.
         </p>
       </div>
 
       <div class="apps-grid">
+        <!-- prisM. Suite -->
+        <article class="app-card card-video reveal">
+          <div class="app-card-shot" onclick="focusShowcase('prism')">
+            <img src="assets/screenshots/prism-launcher.png" alt="prisM. Suite ekran görüntüsü" loading="lazy" />
+          </div>
+
+          <div class="app-card-header">
+            <div class="app-icon-wrapper">
+              <img src="assets/prism.svg" alt="prisM. Suite" class="app-icon" />
+            </div>
+            <span class="app-badge badge-video" data-i18n="badge-launcher">Yönetim Merkezi</span>
+          </div>
+
+          <div class="app-card-name-row">
+            <h3 class="app-card-name">prisM. Suite</h3>
+            <span class="app-version-tag prism-ver">v1.0.0</span>
+          </div>
+          <div class="app-card-tagline" data-i18n="prism-tagline">
+            Tüm paketi kuran, doğrulayan ve güncel tutan masaüstü başlatıcı
+          </div>
+
+          <ul class="app-features">
+            <li>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span data-i18n="prism-feat-1">Tek tıkla uygulama kurulumu, güncelleme ve eski sürüme geri alma</span>
+            </li>
+            <li>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span data-i18n="prism-feat-2">İmza ve bütünlük doğrulamasıyla güvenli paket dağıtımı</span>
+            </li>
+            <li>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span data-i18n="prism-feat-3">Türkçe ve İngilizce arayüz, masaüstü kısayol entegrasyonu</span>
+            </li>
+          </ul>
+
+          <div class="app-card-footer">
+            <span style="font-size: 0.8rem; color: var(--text-dim);" data-i18n="status-stable">Kararlı Sürüm</span>
+            <a href="https://github.com/MOzcelik14/prism-suite" target="_blank" rel="noopener" class="app-repo-link">
+              <span data-i18n="link-repo">İncele</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+            </a>
+          </div>
+        </article>
+
         <!-- triM. -->
         <article class="app-card card-video reveal">
+          <div class="app-card-shot" onclick="focusShowcase('trim')">
+            <img src="assets/screenshots/trim-workspace.png" alt="triM. ekran görüntüsü" loading="lazy" />
+          </div>
+
           <div class="app-card-header">
             <div class="app-icon-wrapper">
               <img src="assets/apps/trim.png?v=2" alt="triM." class="app-icon" />
@@ -165,11 +228,11 @@
           <ul class="app-features">
             <li>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span data-i18n="trim-feat-1">Saniyeler içinde açılan arayüz ve düşük bellek tüketimi</span>
+              <span data-i18n="trim-feat-1">Saniyeler içinde açılan çok kanallı zaman çizelgesi ve düşük bellek kullanımı</span>
             </li>
             <li>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span data-i18n="trim-feat-2">Renk tekerlekleri, LUT desteği, ses mikseri ve alt yazı aracı</span>
+              <span data-i18n="trim-feat-2">Renk tekerlekleri, LUT desteği, ses mikseri ve yerel alt yazı aracı</span>
             </li>
             <li>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -188,6 +251,10 @@
 
         <!-- steM. -->
         <article class="app-card card-audio reveal">
+          <div class="app-card-shot" onclick="focusShowcase('stem')">
+            <img src="assets/screenshots/stem-studio.png" alt="steM. ekran görüntüsü" loading="lazy" />
+          </div>
+
           <div class="app-card-header">
             <div class="app-icon-wrapper">
               <img src="assets/apps/stem.png?v=2" alt="steM." class="app-icon" />
@@ -197,7 +264,7 @@
 
           <div class="app-card-name-row">
             <h3 class="app-card-name">steM.</h3>
-            <span class="app-version-tag stem-ver">v0.5.0</span>
+            <span class="app-version-tag stem-ver">v0.5.1</span>
           </div>
           <div class="app-card-tagline" data-i18n="stem-tagline">
             Çok kanallı ses çalışma istasyonu ve dalga formu düzenleyici
@@ -214,7 +281,7 @@
             </li>
             <li>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span data-i18n="stem-feat-3">Yayın standartlarında ses seviyesi ölçümü ve kayıt</span>
+              <span data-i18n="stem-feat-3">Spektral analiz, yayın standartlarında ses ölçümü ve çok kanallı kayıt</span>
             </li>
           </ul>
 
@@ -229,6 +296,10 @@
 
         <!-- beaM. -->
         <article class="app-card card-photo reveal">
+          <div class="app-card-shot" onclick="focusShowcase('beam')">
+            <img src="assets/screenshots/beam-studio.png" alt="beaM. ekran görüntüsü" loading="lazy" />
+          </div>
+
           <div class="app-card-header">
             <div class="app-icon-wrapper">
               <img src="assets/apps/beam.png?v=2" alt="beaM." class="app-icon" />
@@ -487,22 +558,29 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
         'spec-free': 'Ücretsiz & Açık Kaynak',
         'spec-offline': 'Çevrimdışı Çalışır',
         'spec-telemetry': 'Sıfır Telemetri',
+        'caption-prism': 'Tüm yaratıcı uygulamaları tek merkezden kurun, güncelleyin, eski sürüme dönün ve başlatın.',
         'caption-trim': 'Çok kanallı zaman çizelgesi, canlı renk tekerlekleri ve donanım hızlandırmalı dışa aktarma.',
         'caption-stem': 'Tahribatsız çok kanallı ses düzenleme, spektral analiz ve gerçek zamanlı efektler.',
+        'caption-beam': 'Tahribatsız RAW fotoğraf geliştirme, ton eğrisi, 8 bant HSL ve yerel kütüphane yönetimi.',
         'link-explore': 'Detayları Gör',
-        'apps-section-title': 'Pakette Neler Var?',
-        'apps-section-desc': 'Her uygulama bilgisayarınızda doğrudan ve bağımsız çalışır. prisM. Suite ise tümünü tek tıkla kurup güncel tutmanızı sağlar.',
+        'apps-section-title': 'Ekosistemdeki Tüm Uygulamalar',
+        'apps-section-desc': 'Her uygulama bilgisayarınızda doğrudan ve bağımsız çalışır. Başlatıcı ve tüm yaratıcı araçları aşağıda inceleyebilirsiniz.',
+        'badge-launcher': 'Yönetim Merkezi',
         'badge-video': 'Video',
         'badge-audio': 'Ses',
         'badge-photo': 'Fotoğraf',
+        'prism-tagline': 'Tüm paketi kuran, doğrulayan ve güncel tutan masaüstü başlatıcı',
+        'prism-feat-1': 'Tek tıkla uygulama kurulumu, güncelleme ve eski sürüme geri alma',
+        'prism-feat-2': 'İmza ve bütünlük doğrulamasıyla güvenli paket dağıtımı',
+        'prism-feat-3': 'Türkçe ve İngilizce arayüz, masaüstü kısayol entegrasyonu',
         'trim-tagline': 'Hafif, hızlı ve akıcı doğrusal olmayan video düzenleyici',
-        'trim-feat-1': 'Saniyeler içinde açılan arayüz ve düşük bellek tüketimi',
-        'trim-feat-2': 'Renk tekerlekleri, LUT desteği, ses mikseri ve alt yazı aracı',
+        'trim-feat-1': 'Saniyeler içinde açılan çok kanallı zaman çizelgesi ve düşük bellek kullanımı',
+        'trim-feat-2': 'Renk tekerlekleri, LUT desteği, ses mikseri ve yerel alt yazı aracı',
         'trim-feat-3': '4K kurgu için akıllı proxy ve donanım hızlandırmalı çıktı',
         'stem-tagline': 'Çok kanallı ses çalışma istasyonu ve dalga formu düzenleyici',
         'stem-feat-1': 'Orijinal kayıtları bozmadan kesme, birleştirme ve düzenleme',
         'stem-feat-2': 'Canlı EQ, kompresör, yankı efektleri ve gürültü temizleme',
-        'stem-feat-3': 'Yayın standartlarında ses seviyesi ölçümü ve kayıt',
+        'stem-feat-3': 'Spektral analiz, yayın standartlarında ses ölçümü ve çok kanallı kayıt',
         'beam-tagline': 'Tahribatsız RAW fotoğraf stüdyosu ve yerel arşiv yöneticisi',
         'beam-feat-1': 'Kamera RAW dosyalarını orijinale dokunmadan düzenleme',
         'beam-feat-2': 'Ton eğrisi, 8 bant HSL renk kontrolü ve öncesi/sonrası kıyaslama',
@@ -558,22 +636,29 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
         'spec-free': 'Free & Open Source',
         'spec-offline': 'Works Offline',
         'spec-telemetry': 'Zero Telemetry',
+        'caption-prism': 'Install, update, roll back, and launch every creative app from one desktop hub.',
         'caption-trim': 'Multi-track timeline, live color wheels, and hardware-accelerated export.',
         'caption-stem': 'Non-destructive multi-track audio editing, spectral analysis, and real-time effects.',
+        'caption-beam': 'Non-destructive RAW photo editing, tone curves, 8-band HSL, and local library management.',
         'link-explore': 'Explore Details',
-        'apps-section-title': 'Included Applications',
-        'apps-section-desc': 'Each application runs natively and independently on your machine. prisM. Suite keeps everything installed and up to date in one click.',
+        'apps-section-title': 'Every Application in the Suite',
+        'apps-section-desc': 'Each application runs natively and independently on your machine. Explore the launcher and all creative tools below.',
+        'badge-launcher': 'Control Hub',
         'badge-video': 'Video',
         'badge-audio': 'Audio',
         'badge-photo': 'Photo',
+        'prism-tagline': 'Desktop launcher that installs, verifies, and updates the entire suite',
+        'prism-feat-1': 'One-click install, update, and rollback to previous versions',
+        'prism-feat-2': 'Cryptographic signature and checksum verification on every download',
+        'prism-feat-3': 'English and Turkish UI with native desktop shortcut integration',
         'trim-tagline': 'Fast, lightweight non-linear video editor',
-        'trim-feat-1': 'Launches in seconds with minimal memory footprint',
-        'trim-feat-2': 'Color wheels, LUT support, audio mixer, and subtitle tools',
+        'trim-feat-1': 'Launches in seconds with multi-track timeline and low memory footprint',
+        'trim-feat-2': 'Color wheels, LUT support, audio mixer, and local subtitle tools',
         'trim-feat-3': 'Smart 4K proxy editing and hardware-accelerated export',
         'stem-tagline': 'Multi-track audio workstation and waveform editor',
         'stem-feat-1': 'Cut, splice, and arrange audio without altering source files',
         'stem-feat-2': 'Real-time EQ, compressor, reverb, and noise cleanup',
-        'stem-feat-3': 'Broadcast loudness metering and multi-track recording',
+        'stem-feat-3': 'Spectral analysis, broadcast loudness metering, and multi-track recording',
         'beam-tagline': 'Non-destructive RAW photo studio and local library manager',
         'beam-feat-1': 'Edit camera RAW files while keeping originals untouched',
         'beam-feat-2': 'Tone curves, 8-band HSL color grading, and split comparisons',
@@ -618,37 +703,40 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
       }
     };
 
-    let currentShowcase = 'trim';
+    const showcaseMeta = {
+      prism: { title: 'prisM. Suite — Application Hub', captionKey: 'caption-prism', url: 'https://github.com/MOzcelik14/prism-suite' },
+      trim: { title: 'triM. — Video Studio', captionKey: 'caption-trim', url: 'https://github.com/MOzcelik14/triM' },
+      stem: { title: 'steM. — Audio Workstation', captionKey: 'caption-stem', url: 'https://github.com/MOzcelik14/steM' },
+      beam: { title: 'beaM. — RAW Photo Studio', captionKey: 'caption-beam', url: 'https://github.com/MOzcelik14/beaM' }
+    };
 
     function switchShowcase(key, btn) {
-      currentShowcase = key;
       document.querySelectorAll('.showcase-tab').forEach(b => b.classList.remove('active'));
-      if (btn) btn.classList.add('active');
+      const targetBtn = btn || document.querySelector(`.showcase-tab[data-showcase="${key}"]`);
+      if (targetBtn) targetBtn.classList.add('active');
       document.querySelectorAll('.showcase-panel').forEach(p => p.classList.remove('active'));
       const panel = document.getElementById('panel-' + key);
       if (panel) panel.classList.add('active');
 
+      const meta = showcaseMeta[key] || showcaseMeta.prism;
       const titleEl = document.getElementById('showcase-win-title');
       const capEl = document.getElementById('showcase-caption-text');
       const linkEl = document.getElementById('showcase-caption-link');
       const lang = document.documentElement.lang || 'tr';
       const dict = translations[lang] || translations.tr;
 
-      if (key === 'trim') {
-        if (titleEl) titleEl.textContent = 'triM. — Video Studio';
-        if (capEl) {
-          capEl.setAttribute('data-i18n', 'caption-trim');
-          capEl.textContent = dict['caption-trim'];
-        }
-        if (linkEl) linkEl.href = 'https://github.com/MOzcelik14/triM';
-      } else {
-        if (titleEl) titleEl.textContent = 'steM. — Audio Workstation';
-        if (capEl) {
-          capEl.setAttribute('data-i18n', 'caption-stem');
-          capEl.textContent = dict['caption-stem'];
-        }
-        if (linkEl) linkEl.href = 'https://github.com/MOzcelik14/steM';
+      if (titleEl) titleEl.textContent = meta.title;
+      if (capEl) {
+        capEl.setAttribute('data-i18n', meta.captionKey);
+        capEl.textContent = dict[meta.captionKey];
       }
+      if (linkEl) linkEl.href = meta.url;
+    }
+
+    function focusShowcase(key) {
+      switchShowcase(key);
+      const el = document.getElementById('showcase');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function switchTab(id, btn) {
