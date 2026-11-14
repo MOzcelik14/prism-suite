@@ -5,6 +5,7 @@ mod app;
 mod icons;
 mod logo;
 mod theme;
+mod ui;
 
 use app::PrismApp;
 use eframe::egui;

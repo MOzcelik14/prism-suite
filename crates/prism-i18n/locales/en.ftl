@@ -115,22 +115,22 @@ msg-launched-success = Application launched.
 msg-launcher-updated = prisM. Suite has been updated to v{ $version }. Please restart.
 
 # Toolbar & Grid
-filter-all = ALL
-filter-installed = INSTALLED
-filter-updates = UPDATES
-section-creative-apps = 01 / CREATIVE APPS
-apps-count-label = { $count } APPS
-btn-update-all = UPDATE ALL
-footer-checked = CHECKED: JUST NOW · GITHUB
-footer-offline = OFFLINE · LOCAL MODE
-status-available-to-install = AVAILABLE TO INSTALL
-status-in-development = IN DEVELOPMENT
-status-up-to-date = INSTALLED · UP TO DATE
+filter-all = All
+filter-installed = Installed
+filter-updates = Updates
+section-creative-apps = Applications
+apps-count-label = { $count } apps
+btn-update-all = Update All
+footer-checked = Last checked: Just now (GitHub)
+footer-offline = Offline (Local)
+status-available-to-install = Available
+status-in-development = In Development
+status-up-to-date = Up to Date
 
 # Comparisons
-compare-trim = Like Adobe Premiere Pro®
-compare-stem = Like Audacity & Reaper
-compare-beam = Like Adobe Lightroom®
+compare-trim = Adobe Premiere Pro alternative
+compare-stem = Audacity & Reaper alternative
+compare-beam = Adobe Lightroom alternative
 
 # Categories
 category-trim = Video Editor
@@ -138,10 +138,10 @@ category-stem = Audio Workstation
 category-beam = RAW Photo Editor
 
 # Status & Badges
-home-all-up-to-date = All Systems Up to Date
-filter-no-results = No applications match the selected filter.
-footer-open-source-note = — All applications are open-source, standalone, and native desktop tools.
-footer-github-org = GitHub Organization ↗
+home-all-up-to-date = All apps are up to date
+filter-no-results = No applications match this filter.
+footer-open-source-note = Open-source, standalone native desktop tools.
+footer-github-org = GitHub
 version-current = Version { $version } · Up to date
 version-installed = Version { $version } Installed
 version-new-available = New Version: { $version }
@@ -149,8 +149,16 @@ status-error-msg = Error: { $message }
 version-available-badge = v{ $version } Available
 version-installed-badge = v{ $version } Installed
 version-update-badge = v{ $version } Update
-tooltip-open-github = Open { $app } GitHub repository in browser
-whats-new-subtitle = Latest release notes and improvements across all suite applications
+tooltip-open-github = Open { $app } GitHub repository
+whats-new-subtitle = Recent release notes across suite applications
 about-launcher-repo = GitHub Repository
-about-org-repo = Creative Suite Organization
+about-org-repo = Developer Profile
 settings-current-dir = Current: { $dir }
+settings-section-general = General
+settings-section-updates = Updates
+settings-section-storage = Storage
+about-arch = Architecture
+about-graphics = Graphics
+about-developer = Developer
+about-ecosystem = Applications
+sidebar-checking = Checking...

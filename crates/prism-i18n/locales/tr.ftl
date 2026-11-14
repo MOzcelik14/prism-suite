@@ -115,33 +115,33 @@ msg-launched-success = Uygulama başlatıldı.
 msg-launcher-updated = prisM. Suite v{ $version } sürümüne güncellendi. Lütfen yeniden başlatın.
 
 # Toolbar & Grid
-filter-all = TÜMÜ
-filter-installed = YÜKLÜ
-filter-updates = GÜNCELLEMELER
-section-creative-apps = 01 / YARATICI UYGULAMALAR
-apps-count-label = { $count } UYGULAMA
-btn-update-all = TÜMÜNÜ GÜNCELLE
-footer-checked = DENETLENDİ: AZ ÖNCE · GITHUB
-footer-offline = ÇEVRİMDIŞI · YEREL MOD
-status-available-to-install = KURULABİLİR
-status-in-development = GELİŞTİRİLİYOR
-status-up-to-date = YÜKLÜ · GÜNCEL
+filter-all = Tümü
+filter-installed = Yüklü
+filter-updates = Güncellemeler
+section-creative-apps = Uygulamalar
+apps-count-label = { $count } uygulama
+btn-update-all = Tümünü Güncelle
+footer-checked = Son denetim: Az önce (GitHub)
+footer-offline = Çevrimdışı (Yerel)
+status-available-to-install = Kurulabilir
+status-in-development = Geliştiriliyor
+status-up-to-date = Güncel
 
 # Comparisons
-compare-trim = Adobe Premiere Pro® alternatifi
-compare-stem = Audacity & Reaper alternatifi
-compare-beam = Adobe Lightroom® alternatifi
+compare-trim = Adobe Premiere Pro alternatifi
+compare-stem = Audacity ve Reaper alternatifi
+compare-beam = Adobe Lightroom alternatifi
 
 # Categories
 category-trim = Video Düzenleyici
-category-stem = Ses Çalışma İstasyonu
+category-stem = Ses İstasyonu
 category-beam = RAW Fotoğraf Düzenleyici
 
 # Status & Badges
-home-all-up-to-date = Tüm Sistemler Güncel
-filter-no-results = Bu filtreye uygun uygulama bulunamadı.
-footer-open-source-note = — Tüm uygulamalar açık kaynaklı, bağımsız ve yerel araçlardır.
-footer-github-org = GitHub Kuruluşu ↗
+home-all-up-to-date = Tüm uygulamalar güncel
+filter-no-results = Bu filtreye uygun uygulama yok.
+footer-open-source-note = Açık kaynaklı, bağımsız masaüstü araçları.
+footer-github-org = GitHub
 version-current = Sürüm { $version } · Güncel
 version-installed = Sürüm { $version } Kurulu
 version-new-available = Yeni Sürüm: { $version }
@@ -149,8 +149,16 @@ status-error-msg = Hata: { $message }
 version-available-badge = v{ $version } Mevcut
 version-installed-badge = v{ $version } Kurulu
 version-update-badge = v{ $version } Güncelleme
-tooltip-open-github = { $app } GitHub sayfasını tarayıcıda aç
-whats-new-subtitle = Tüm paket uygulamalarındaki son sürüm notları ve geliştirmeler
+tooltip-open-github = { $app } GitHub deposunu aç
+whats-new-subtitle = Paket uygulamalarındaki son sürüm notları
 about-launcher-repo = GitHub Deposu
-about-org-repo = Creative Suite Organizasyonu
+about-org-repo = Geliştirici Profili
 settings-current-dir = Mevcut: { $dir }
+settings-section-general = Genel
+settings-section-updates = Güncellemeler
+settings-section-storage = Depolama
+about-arch = Mimari
+about-graphics = Grafik Motoru
+about-developer = Geliştirici
+about-ecosystem = Uygulamalar
+sidebar-checking = Denetleniyor...
