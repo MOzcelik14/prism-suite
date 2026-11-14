@@ -45,7 +45,7 @@ pub fn render_app_ui(app: &mut PrismApp, ctx: &egui::Context) {
                     ui.label(RichText::new(msg).size(11.5_f32).color(TEXT_SECONDARY));
                 } else {
                     ui.label(
-                        RichText::new(app.i18n.text("app-subtitle"))
+                        RichText::new(app.i18n.text("suite-subtitle"))
                             .size(11.5_f32)
                             .color(TEXT_MUTED),
                     );
