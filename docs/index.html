@@ -112,7 +112,7 @@
 
           <div class="app-card-name-row">
             <h3 class="app-card-name">triM.</h3>
-            <span class="app-version-tag trim-ver">v1.3.4</span>
+            <span class="app-version-tag trim-ver">v1.6.1</span>
           </div>
           <div class="app-card-tagline" data-i18n="trim-tagline">
             Hafif ve modern doğrusal olmayan video düzenleyici
@@ -153,7 +153,7 @@
 
           <div class="app-card-name-row">
             <h3 class="app-card-name">steM.</h3>
-            <span class="app-version-tag stem-ver">v0.1.5</span>
+            <span class="app-version-tag stem-ver">v0.5.0</span>
           </div>
           <div class="app-card-tagline" data-i18n="stem-tagline">
             Çok kanallı ses çalışma istasyonu ve dalga formu düzenleyici
@@ -194,7 +194,7 @@
 
           <div class="app-card-name-row">
             <h3 class="app-card-name">beaM.</h3>
-            <span class="app-version-tag beam-ver">v0.2.0</span>
+            <span class="app-version-tag beam-ver">v1.0.0</span>
           </div>
           <div class="app-card-tagline" data-i18n="beam-tagline">
             Tahribatsız RAW fotoğraf düzenleyici ve kütüphane yöneticisi
@@ -674,98 +674,141 @@ cargo run --release -p prism-app</div>
       return s.startsWith('v') ? s : 'v' + s;
     }
 
-    // Apply stored versions immediately on load before any network latency
+    function parseSemver(v) {
+      const m = String(v || '').trim().replace(/^v/i, '').match(/^(\d+)\.(\d+)\.(\d+)/);
+      return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : [0, 0, 0];
+    }
+
+    function isNewerOrEqual(candidate, current) {
+      const a = parseSemver(candidate);
+      const b = parseSemver(current);
+      for (let i = 0; i < 3; i++) {
+        if (a[i] > b[i]) return true;
+        if (a[i] < b[i]) return false;
+      }
+      return true;
+    }
+
+    function setVersionIfNewer(selector, ver, storageKey) {
+      const formatted = fmtVer(ver);
+      if (!formatted) return;
+      document.querySelectorAll(selector).forEach(el => {
+        if (isNewerOrEqual(formatted, el.textContent)) {
+          el.textContent = formatted;
+        }
+      });
+      if (storageKey) {
+        try { localStorage.setItem(storageKey, formatted); } catch (e) {}
+      }
+    }
+
+    function applySuiteLinks(suite) {
+      if (!suite) return;
+      if (suite.deb_url && suite.deb_name) {
+        const btn = document.getElementById('link-deb');
+        if (btn) btn.href = suite.deb_url;
+        const cmd = document.getElementById('deb-cmd');
+        if (cmd) cmd.textContent = `curl -LO ${suite.deb_url}\nsudo dpkg -i ${suite.deb_name}`;
+      }
+      if (suite.rpm_url && suite.rpm_name) {
+        const btn = document.getElementById('link-rpm');
+        if (btn) btn.href = suite.rpm_url;
+        const cmd = document.getElementById('rpm-cmd');
+        if (cmd) cmd.textContent = `curl -LO ${suite.rpm_url}\nsudo dnf install ./${suite.rpm_name}`;
+      }
+      if (suite.appimage_url && suite.appimage_name) {
+        const btn = document.getElementById('link-appimage');
+        if (btn) btn.href = suite.appimage_url;
+        const cmd = document.getElementById('appimage-cmd');
+        if (cmd) cmd.textContent = `curl -LO ${suite.appimage_url}\nchmod +x ${suite.appimage_name}\n./${suite.appimage_name}`;
+      }
+      if (suite.win_url) {
+        const btn = document.getElementById('link-win');
+        if (btn) btn.href = suite.win_url;
+        const cmd = document.getElementById('win-cmd');
+        if (cmd) cmd.textContent = `Invoke-WebRequest -Uri "${suite.win_url}" -OutFile "prism.zip"\nExpand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\\Programs\\prism"\n& "$env:LOCALAPPDATA\\Programs\\prism\\prism.exe"`;
+      }
+    }
+
+    // Apply stored versions only if they are newer than the HTML fallback
     function applySavedVersions() {
       try {
         const t = localStorage.getItem('prism_trim_ver');
-        if (t) document.querySelectorAll('.trim-ver').forEach(el => el.textContent = t);
+        if (t) setVersionIfNewer('.trim-ver', t);
         const s = localStorage.getItem('prism_stem_ver');
-        if (s) document.querySelectorAll('.stem-ver').forEach(el => el.textContent = s);
+        if (s) setVersionIfNewer('.stem-ver', s);
         const b = localStorage.getItem('prism_beam_ver');
-        if (b) document.querySelectorAll('.beam-ver').forEach(el => el.textContent = b);
+        if (b) setVersionIfNewer('.beam-ver', b);
         const p = localStorage.getItem('prism_suite_ver');
-        if (p) document.querySelectorAll('.prism-ver').forEach(el => el.textContent = p);
+        if (p) setVersionIfNewer('.prism-ver', p);
       } catch (e) {}
     }
 
-    // Dynamic release version updater via GitHub API
+    // Dynamic release version updater via same-origin manifest + GitHub API
     async function updateDynamicVersions() {
+      try {
+        const manifestRes = await fetch(`./versions.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (manifestRes.ok) {
+          const m = await manifestRes.json();
+          if (m.trim) setVersionIfNewer('.trim-ver', m.trim, 'prism_trim_ver');
+          if (m.stem) setVersionIfNewer('.stem-ver', m.stem, 'prism_stem_ver');
+          if (m.beam) setVersionIfNewer('.beam-ver', m.beam, 'prism_beam_ver');
+          if (m.prism_suite) {
+            if (m.prism_suite.version) setVersionIfNewer('.prism-ver', m.prism_suite.version, 'prism_suite_ver');
+            applySuiteLinks(m.prism_suite);
+          }
+        }
+      } catch (e) {}
+
       const fetchOpts = {
+        cache: 'no-store',
         headers: { 'Accept': 'application/vnd.github.v3+json' }
       };
 
-      // 1. Fetch triM. latest release
       fetch('https://api.github.com/repos/MOzcelik14/triM/releases/latest', fetchOpts)
         .then(r => r.ok ? r.json() : null)
         .then(d => {
           if (d && (d.tag_name || d.name)) {
-            const v = fmtVer(d.tag_name || d.name);
-            document.querySelectorAll('.trim-ver').forEach(el => el.textContent = v);
-            try { localStorage.setItem('prism_trim_ver', v); } catch (e) {}
+            setVersionIfNewer('.trim-ver', d.tag_name || d.name, 'prism_trim_ver');
           }
         }).catch(() => {});
 
-      // 2. Fetch steM. latest release
       fetch('https://api.github.com/repos/MOzcelik14/steM/releases/latest', fetchOpts)
         .then(r => r.ok ? r.json() : null)
         .then(d => {
           if (d && (d.tag_name || d.name)) {
-            const v = fmtVer(d.tag_name || d.name);
-            document.querySelectorAll('.stem-ver').forEach(el => el.textContent = v);
-            try { localStorage.setItem('prism_stem_ver', v); } catch (e) {}
+            setVersionIfNewer('.stem-ver', d.tag_name || d.name, 'prism_stem_ver');
           }
         }).catch(() => {});
 
-      // 3. Fetch beaM. latest release
       fetch('https://api.github.com/repos/MOzcelik14/beaM/releases/latest', fetchOpts)
         .then(r => r.ok ? r.json() : null)
         .then(d => {
           if (d && (d.tag_name || d.name)) {
-            const v = fmtVer(d.tag_name || d.name);
-            document.querySelectorAll('.beam-ver').forEach(el => el.textContent = v);
-            try { localStorage.setItem('prism_beam_ver', v); } catch (e) {}
+            setVersionIfNewer('.beam-ver', d.tag_name || d.name, 'prism_beam_ver');
           }
         }).catch(() => {});
 
-      // 4. Fetch prisM. Suite latest release and update download links/commands
       fetch('https://api.github.com/repos/MOzcelik14/prism-suite/releases/latest', fetchOpts)
         .then(r => r.ok ? r.json() : null)
         .then(d => {
           if (!d) return;
           const v = fmtVer(d.tag_name || d.name);
-          if (v) {
-            document.querySelectorAll('.prism-ver').forEach(el => el.textContent = v);
-            try { localStorage.setItem('prism_suite_ver', v); } catch (e) {}
-          }
+          if (v) setVersionIfNewer('.prism-ver', v, 'prism_suite_ver');
           if (d.assets && Array.isArray(d.assets)) {
             const deb = d.assets.find(a => a.name.endsWith('.deb'));
-            if (deb) {
-              const btn = document.getElementById('link-deb');
-              if (btn) btn.href = deb.browser_download_url;
-              const cmd = document.getElementById('deb-cmd');
-              if (cmd) cmd.textContent = `curl -LO ${deb.browser_download_url}\nsudo dpkg -i ${deb.name}`;
-            }
             const rpm = d.assets.find(a => a.name.endsWith('.rpm'));
-            if (rpm) {
-              const btn = document.getElementById('link-rpm');
-              if (btn) btn.href = rpm.browser_download_url;
-              const cmd = document.getElementById('rpm-cmd');
-              if (cmd) cmd.textContent = `curl -LO ${rpm.browser_download_url}\nsudo dnf install ./${rpm.name}`;
-            }
             const appimage = d.assets.find(a => a.name.endsWith('.AppImage'));
-            if (appimage) {
-              const btn = document.getElementById('link-appimage');
-              if (btn) btn.href = appimage.browser_download_url;
-              const cmd = document.getElementById('appimage-cmd');
-              if (cmd) cmd.textContent = `curl -LO ${appimage.browser_download_url}\nchmod +x ${appimage.name}\n./${appimage.name}`;
-            }
             const win = d.assets.find(a => a.name.endsWith('.zip'));
-            if (win) {
-              const btn = document.getElementById('link-win');
-              if (btn) btn.href = win.browser_download_url;
-              const cmd = document.getElementById('win-cmd');
-              if (cmd) cmd.textContent = `Invoke-WebRequest -Uri "${win.browser_download_url}" -OutFile "prism.zip"\nExpand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\\Programs\\prism"\n& "$env:LOCALAPPDATA\\Programs\\prism\\prism.exe"`;
-            }
+            applySuiteLinks({
+              deb_url: deb && deb.browser_download_url,
+              deb_name: deb && deb.name,
+              rpm_url: rpm && rpm.browser_download_url,
+              rpm_name: rpm && rpm.name,
+              appimage_url: appimage && appimage.browser_download_url,
+              appimage_name: appimage && appimage.name,
+              win_url: win && win.browser_download_url,
+            });
           }
         }).catch(() => {});
     }

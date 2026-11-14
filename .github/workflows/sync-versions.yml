@@ -1,0 +1,114 @@
+name: Sync Website Versions
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch latest release versions and update docs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import urllib.request
+
+          token = os.environ.get("GH_TOKEN", "")
+
+          def fetch_latest(repo):
+              url = f"https://api.github.com/repos/MOzcelik14/{repo}/releases/latest"
+              req = urllib.request.Request(url, headers={
+                  "Accept": "application/vnd.github.v3+json",
+                  "User-Agent": "prism-suite-sync",
+                  **({"Authorization": f"Bearer {token}"} if token else {}),
+              })
+              try:
+                  with urllib.request.urlopen(req, timeout=15) as resp:
+                      return json.loads(resp.read().decode("utf-8"))
+              except Exception:
+                  url_all = f"https://api.github.com/repos/MOzcelik14/{repo}/releases?per_page=1"
+                  req2 = urllib.request.Request(url_all, headers={
+                      "Accept": "application/vnd.github.v3+json",
+                      "User-Agent": "prism-suite-sync",
+                      **({"Authorization": f"Bearer {token}"} if token else {}),
+                  })
+                  with urllib.request.urlopen(req2, timeout=15) as resp:
+                      items = json.loads(resp.read().decode("utf-8"))
+                      return items[0] if items else None
+
+          def fmt_ver(raw):
+              s = str(raw or "").strip()
+              return s if s.startswith("v") else f"v{s}"
+
+          def find_asset(assets, suffix):
+              for a in assets or []:
+                  if a.get("name", "").endswith(suffix):
+                      return a.get("browser_download_url"), a.get("name")
+              return None, None
+
+          suite_rel = fetch_latest("prism-suite")
+          trim_rel = fetch_latest("triM")
+          stem_rel = fetch_latest("steM")
+          beam_rel = fetch_latest("beaM")
+
+          with open("docs/versions.json", "r", encoding="utf-8") as f:
+              data = json.load(f)
+
+          if suite_rel and (suite_rel.get("tag_name") or suite_rel.get("name")):
+              sv = fmt_ver(suite_rel.get("tag_name") or suite_rel.get("name"))
+              data["prism_suite"]["version"] = sv
+              assets = suite_rel.get("assets", [])
+              for key, ext in [("deb", ".deb"), ("rpm", ".rpm"), ("appimage", ".AppImage"), ("win", ".zip")]:
+                  url, name = find_asset(assets, ext)
+                  if url and name:
+                      data["prism_suite"][f"{key}_url"] = url
+                      data["prism_suite"][f"{key}_name"] = name
+
+          if trim_rel and (trim_rel.get("tag_name") or trim_rel.get("name")):
+              data["trim"] = fmt_ver(trim_rel.get("tag_name") or trim_rel.get("name"))
+          if stem_rel and (stem_rel.get("tag_name") or stem_rel.get("name")):
+              data["stem"] = fmt_ver(stem_rel.get("tag_name") or stem_rel.get("name"))
+          if beam_rel and (beam_rel.get("tag_name") or beam_rel.get("name")):
+              data["beam"] = fmt_ver(beam_rel.get("tag_name") or beam_rel.get("name"))
+
+          with open("docs/versions.json", "w", encoding="utf-8") as f:
+              json.dump(data, f, indent=2)
+              f.write("\n")
+
+          with open("docs/index.html", "r", encoding="utf-8") as f:
+              html = f.read()
+
+          html = re.sub(r'(<span class="app-version-tag trim-ver">)[^<]+(</span>)', rf'\g<1>{data["trim"]}\2', html)
+          html = re.sub(r'(<span class="app-version-tag stem-ver">)[^<]+(</span>)', rf'\g<1>{data["stem"]}\2', html)
+          html = re.sub(r'(<span class="app-version-tag beam-ver">)[^<]+(</span>)', rf'\g<1>{data["beam"]}\2', html)
+          html = re.sub(r'(<span class="prism-ver">)[^<]+(</span>)', rf'\g<1>{data["prism_suite"]["version"]}\2', html)
+
+          with open("docs/index.html", "w", encoding="utf-8") as f:
+              f.write(html)
+          PY
+
+      - name: Commit and push if changed
+        run: |
+          if [ -n "$(git status --porcelain docs/)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add docs/versions.json docs/index.html
+            git commit -m "chore(site): sync latest release versions"
+            git push
+          else
+            echo "Versions already up to date."
+          fi
