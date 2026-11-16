@@ -53,6 +53,7 @@ fn get_app_icon_png(app_id: prism_core::AppId) -> &'static [u8] {
         prism_core::AppId::Trim => include_bytes!("../../../assets/apps/trim.png"),
         prism_core::AppId::Stem => include_bytes!("../../../assets/apps/stem.png"),
         prism_core::AppId::Beam => include_bytes!("../../../assets/apps/beam.png"),
+        prism_core::AppId::Dram => include_bytes!("../../../assets/apps/dram.png"),
     }
 }
 

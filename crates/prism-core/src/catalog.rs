@@ -9,16 +9,18 @@ pub enum AppId {
     Trim,
     Stem,
     Beam,
+    Dram,
 }
 
 impl AppId {
-    pub const ALL: [AppId; 3] = [AppId::Trim, AppId::Stem, AppId::Beam];
+    pub const ALL: [AppId; 4] = [AppId::Trim, AppId::Stem, AppId::Beam, AppId::Dram];
 
     pub fn as_str(&self) -> &'static str {
         match self {
             AppId::Trim => "trim",
             AppId::Stem => "stem",
             AppId::Beam => "beam",
+            AppId::Dram => "dram",
         }
     }
 }
@@ -81,7 +83,7 @@ mod tests {
     #[test]
     fn test_embedded_catalog_loads_and_contains_all_apps() {
         let catalog = AppCatalog::load_embedded();
-        assert_eq!(catalog.apps.len(), 3);
+        assert_eq!(catalog.apps.len(), 4);
 
         let trim = catalog.get(AppId::Trim).expect("triM. must be in catalog");
         assert_eq!(trim.display_name, "triM.");
@@ -97,5 +99,10 @@ mod tests {
         assert_eq!(beam.display_name, "beaM.");
         assert_eq!(beam.repository, "https://github.com/MOzcelik14/beaM");
         assert_eq!(beam.default_branch, "master");
+
+        let dram = catalog.get(AppId::Dram).expect("draM. must be in catalog");
+        assert_eq!(dram.display_name, "draM.");
+        assert_eq!(dram.repository, "https://github.com/MOzcelik14/draM");
+        assert_eq!(dram.default_branch, "main");
     }
 }

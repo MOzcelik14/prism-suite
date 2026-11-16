@@ -36,5 +36,17 @@
             primary_binary_name: "beam",
             accent_color: (192, 132, 252),
         ),
+        (
+            id: Dram,
+            display_name: "draM.",
+            category: "screenplay",
+            tagline_key: "app-dram-tagline",
+            description_key: "app-dram-description",
+            runtime_notes_key: Some("app-dram-runtime-notes"),
+            repository: "https://github.com/MOzcelik14/draM",
+            default_branch: "main",
+            primary_binary_name: "dram",
+            accent_color: (245, 158, 11),
+        ),
     ]
 )

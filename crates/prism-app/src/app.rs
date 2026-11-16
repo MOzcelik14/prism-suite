@@ -81,6 +81,7 @@ pub enum AppEvent {
     },
     LauncherUpdated {
         version: String,
+        target_exe: std::path::PathBuf,
     },
     LauncherUpdateFailed {
         error: String,
@@ -311,9 +312,10 @@ impl PrismApp {
                 &archive_bytes,
                 &current_exe,
             ) {
-                Ok(()) => {
+                Ok(target_exe) => {
                     let _ = tx.send(AppEvent::LauncherUpdated {
                         version: release.version.to_string(),
+                        target_exe,
                     });
                 }
                 Err(e) => {
@@ -756,7 +758,10 @@ impl PrismApp {
                 AppEvent::LauncherUpdateProgress { progress } => {
                     self.launcher_update_state = LauncherSelfUpdateState::Updating { progress };
                 }
-                AppEvent::LauncherUpdated { version } => {
+                AppEvent::LauncherUpdated {
+                    version,
+                    target_exe,
+                } => {
                     self.launcher_update_state = LauncherSelfUpdateState::Updated {
                         version: version.clone(),
                     };
@@ -765,6 +770,17 @@ impl PrismApp {
                         "version",
                         &version,
                     ));
+                    #[cfg(not(windows))]
+                    {
+                        let work_dir = target_exe
+                            .parent()
+                            .unwrap_or_else(|| std::path::Path::new("."));
+                        let _ = prism_install::launch_detached(&target_exe, work_dir);
+                    }
+                    // On Windows, the detached cmd.exe helper waits for this PID to exit,
+                    // finalizes replacement/cleanup, and relaunches target_exe automatically.
+                    let _ = &target_exe;
+                    std::process::exit(0);
                 }
                 AppEvent::LauncherUpdateFailed { error } => {
                     self.launcher_update_state = LauncherSelfUpdateState::Error(error.clone());
@@ -829,7 +845,7 @@ impl eframe::App for PrismApp {
 
         // Lazy load authentic application icon textures
         if self.app_textures.is_empty() {
-            let app_icons: [(AppId, &str, &[u8]); 3] = [
+            let app_icons: [(AppId, &str, &[u8]); 4] = [
                 (
                     AppId::Trim,
                     "trim_icon",
@@ -844,6 +860,11 @@ impl eframe::App for PrismApp {
                     AppId::Beam,
                     "beam_icon",
                     include_bytes!("../../../assets/apps/beam.rgba"),
+                ),
+                (
+                    AppId::Dram,
+                    "dram_icon",
+                    include_bytes!("../../../assets/apps/dram.rgba"),
                 ),
             ];
             for (id, name, bytes) in app_icons {
@@ -928,6 +949,7 @@ fn find_local_project_binary(app_id: AppId) -> Option<PathBuf> {
         AppId::Trim => ("triM", "trim"),
         AppId::Stem => ("steM", "stem"),
         AppId::Beam => ("beaM", "beam"),
+        AppId::Dram => ("draM", "dram"),
     };
 
     if let Ok(home) = std::env::var("HOME") {

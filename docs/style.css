@@ -525,6 +525,7 @@ section {
 .card-video { --card-accent: linear-gradient(90deg, #6366f1, #22d3ee); }
 .card-audio { --card-accent: linear-gradient(90deg, #10b981, #34d399); }
 .card-photo { --card-accent: linear-gradient(90deg, #a855f7, #ec4899); }
+.card-screenplay { --card-accent: linear-gradient(90deg, #f59e0b, #fbbf24); }
 
 .app-card-header {
   display: flex;
@@ -562,6 +563,7 @@ section {
 .badge-video { background: rgba(99, 102, 241, 0.14); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.25); }
 .badge-audio { background: rgba(16, 185, 129, 0.14); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.25); }
 .badge-photo { background: rgba(168, 85, 247, 0.14); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.25); }
+.badge-screenplay { background: rgba(245, 158, 11, 0.14); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.25); }
 
 .app-card-name-row {
   display: flex;

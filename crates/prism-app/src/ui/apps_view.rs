@@ -155,18 +155,7 @@ pub fn render_apps_view(app: &mut PrismApp, ui: &mut Ui) {
                             );
                         });
                     });
-            } else if content_width >= 760.0 {
-                let cols = 3;
-                let spacing = 16.0_f32;
-                let card_w = (content_width - (cols as f32 - 1.0) * spacing) / cols as f32;
-
-                ui.columns(cols, |columns| {
-                    for (i, entry) in filtered_apps.iter().enumerate() {
-                        let col_idx = i % cols;
-                        render_app_card(app, &mut columns[col_idx], entry, card_w);
-                    }
-                });
-            } else if content_width >= 500.0 {
+            } else if content_width >= 580.0 {
                 let cols = 2;
                 let spacing = 16.0_f32;
                 let card_w = (content_width - spacing) / 2.0_f32;
@@ -175,6 +164,7 @@ pub fn render_apps_view(app: &mut PrismApp, ui: &mut Ui) {
                     for (i, entry) in filtered_apps.iter().enumerate() {
                         let col_idx = i % cols;
                         render_app_card(app, &mut columns[col_idx], entry, card_w);
+                        columns[col_idx].add_space(16.0);
                     }
                 });
             } else {
@@ -243,6 +233,7 @@ fn render_app_card(app: &mut PrismApp, ui: &mut Ui, entry: &prism_core::AppEntry
         AppId::Trim => ACCENT_CYAN,
         AppId::Stem => ACCENT_EMERALD,
         AppId::Beam => ACCENT_VIOLET,
+        AppId::Dram => ACCENT_AMBER,
     };
 
     let card_resp = ui.allocate_ui(vec2(card_width, card_height), |ui| {
@@ -346,6 +337,7 @@ fn render_app_card(app: &mut PrismApp, ui: &mut Ui, entry: &prism_core::AppEntry
                                         AppId::Trim => app.i18n.text("category-trim"),
                                         AppId::Stem => app.i18n.text("category-stem"),
                                         AppId::Beam => app.i18n.text("category-beam"),
+                                        AppId::Dram => app.i18n.text("category-dram"),
                                     };
                                     egui::Frame::none()
                                         .fill(accent_col.linear_multiply(0.14))
@@ -369,6 +361,7 @@ fn render_app_card(app: &mut PrismApp, ui: &mut Ui, entry: &prism_core::AppEntry
                                     AppId::Trim => app.i18n.text("compare-trim"),
                                     AppId::Stem => app.i18n.text("compare-stem"),
                                     AppId::Beam => app.i18n.text("compare-beam"),
+                                    AppId::Dram => app.i18n.text("compare-dram"),
                                 };
                                 ui.label(RichText::new(comparison).size(11.0).color(TEXT_MUTED));
                             });
@@ -446,6 +439,8 @@ fn render_app_card(app: &mut PrismApp, ui: &mut Ui, entry: &prism_core::AppEntry
                                 }
                                 (AppId::Beam, "tr") => &["wgpu Vulkan", "Rec.2020", "RAW İşleme"],
                                 (AppId::Beam, _) => &["wgpu Vulkan", "Rec.2020", "RAW Engine"],
+                                (AppId::Dram, "tr") => &["Courier Prime", "PDF / FDX", "TR / EN"],
+                                (AppId::Dram, _) => &["Courier Prime", "PDF / FDX", "TR / EN"],
                             };
 
                             for &chip in chips {

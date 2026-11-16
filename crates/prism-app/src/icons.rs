@@ -27,6 +27,11 @@ pub fn draw_app_icon(painter: &Painter, rect: Rect, app_id: AppId) {
             Color32::from_rgb(192, 132, 252), // Purple 400
             Color32::from_rgb(192, 132, 252),
         ),
+        AppId::Dram => (
+            Color32::from_rgb(38, 25, 10),   // Dark Amber
+            Color32::from_rgb(245, 158, 11), // Amber 500
+            Color32::from_rgb(245, 158, 11),
+        ),
     };
 
     // Draw background rounded rect
@@ -129,6 +134,26 @@ pub fn draw_app_icon(painter: &Painter, rect: Rect, app_id: AppId) {
                 Stroke::new(size * 0.03_f32, accent_color),
             );
             painter.circle_filled(ring_center, size * 0.04_f32, accent_color);
+        }
+        AppId::Dram => {
+            // Screenplay page lines
+            let y1 = m_top + m_height * 0.22_f32;
+            let y2 = m_top + m_height * 0.38_f32;
+            let stroke = Stroke::new(size * 0.025_f32, accent_color);
+            painter.line_segment(
+                [
+                    Pos2::new(m_mid - size * 0.10_f32, y1),
+                    Pos2::new(m_mid + size * 0.10_f32, y1),
+                ],
+                stroke,
+            );
+            painter.line_segment(
+                [
+                    Pos2::new(m_mid - size * 0.07_f32, y2),
+                    Pos2::new(m_mid + size * 0.07_f32, y2),
+                ],
+                stroke,
+            );
         }
     }
 

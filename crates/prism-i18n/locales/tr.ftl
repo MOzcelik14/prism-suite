@@ -17,6 +17,9 @@ app-stem-runtime-notes = Düşük gecikmeli ALSA/PipeWire/JACK (Linux) veya WASA
 app-beam-tagline = Tahribatsız RAW fotoğraf düzenleyici ve kütüphane yöneticisi
 app-beam-description = wgpu ve egui ile geliştirilmiş modern, saf Rust Adobe Lightroom alternatifi. Lineer Rec.2020 renk uzayında GPU hızlandırmalı gölgelendirici geçişleri.
 app-beam-runtime-notes = 64-bit çok çekirdekli işlemci ve Vulkan/DirectX 12/Metal uyumlu modern grafik işlemci önerilir.
+app-dram-tagline = Türkçe ve İngilizce senaryo kurallarına tam uyumlu senaryo editörü
+app-dram-description = Otomatik senaryo biçimlendirme, Courier Prime gömülü PDF çıktısı, sahne gezgini ve Fountain/FDX/Fade In uyumu sunan odaklanmış senaryo yazım uygulaması.
+app-dram-runtime-notes = Bağımsız yerel uygulama; harici çalışma zamanı gerektirmez.
 
 # Actions
 action-launch = Başlat
@@ -131,11 +134,13 @@ status-up-to-date = Güncel
 compare-trim = Adobe Premiere Pro alternatifi
 compare-stem = Audacity ve Reaper alternatifi
 compare-beam = Adobe Lightroom alternatifi
+compare-dram = Final Draft ve Fade In alternatifi
 
 # Categories
 category-trim = Video Düzenleyici
 category-stem = Ses İstasyonu
 category-beam = RAW Fotoğraf Düzenleyici
+category-dram = Senaryo Editörü
 
 # Status & Badges
 home-all-up-to-date = Tüm uygulamalar güncel

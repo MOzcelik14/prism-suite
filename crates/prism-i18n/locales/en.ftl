@@ -17,6 +17,9 @@ app-stem-runtime-notes = Low-latency ALSA/PipeWire/JACK on Linux, WASAPI on Wind
 app-beam-tagline = Non-destructive RAW photo editor and library manager
 app-beam-description = Modern, pure-Rust alternative to Adobe Lightroom built with wgpu and egui. Linear Rec.2020 working space with GPU-accelerated shader passes.
 app-beam-runtime-notes = 64-bit multi-core CPU and modern GPU with Vulkan/DirectX 12/Metal support.
+app-dram-tagline = Screenplay writing studio with Turkish & English formatting
+app-dram-description = Focused desktop screenwriting app with industry-standard formatting, Courier Prime PDF export, scene navigator, and Fountain/FDX/Fade In support.
+app-dram-runtime-notes = Standalone native binary; no external runtime dependencies required.
 
 # Actions
 action-launch = Launch
@@ -131,11 +134,13 @@ status-up-to-date = Up to Date
 compare-trim = Adobe Premiere Pro alternative
 compare-stem = Audacity & Reaper alternative
 compare-beam = Adobe Lightroom alternative
+compare-dram = Final Draft & Fade In alternative
 
 # Categories
 category-trim = Video Editor
 category-stem = Audio Workstation
 category-beam = RAW Photo Editor
+category-dram = Screenplay Editor
 
 # Status & Badges
 home-all-up-to-date = All apps are up to date

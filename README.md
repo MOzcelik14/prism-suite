@@ -28,6 +28,7 @@
 | **triM.** | Video Editing | Multi-track timeline, color grading, audio mixing, and hardware-accelerated export | [MOzcelik14/triM](https://github.com/MOzcelik14/triM) |
 | **steM.** | Audio Production | Non-destructive multi-track audio editor, real-time effects, and spectral cleanup | [MOzcelik14/steM](https://github.com/MOzcelik14/steM) |
 | **beaM.** | Photo Studio | Non-destructive RAW photo editor, color grading, and local library catalog | [MOzcelik14/beaM](https://github.com/MOzcelik14/beaM) |
+| **draM.** | Screenplay | Screenplay writing studio with Turkish & English formatting and PDF export | [MOzcelik14/draM](https://github.com/MOzcelik14/draM) |
 
 ## Key Highlights
 

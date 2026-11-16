@@ -64,6 +64,7 @@ jobs:
           trim_rel = fetch_latest("triM")
           stem_rel = fetch_latest("steM")
           beam_rel = fetch_latest("beaM")
+          dram_rel = fetch_latest("draM")
 
           with open("docs/versions.json", "r", encoding="utf-8") as f:
               data = json.load(f)
@@ -84,6 +85,8 @@ jobs:
               data["stem"] = fmt_ver(stem_rel.get("tag_name") or stem_rel.get("name"))
           if beam_rel and (beam_rel.get("tag_name") or beam_rel.get("name")):
               data["beam"] = fmt_ver(beam_rel.get("tag_name") or beam_rel.get("name"))
+          if dram_rel and (dram_rel.get("tag_name") or dram_rel.get("name")):
+              data["dram"] = fmt_ver(dram_rel.get("tag_name") or dram_rel.get("name"))
 
           with open("docs/versions.json", "w", encoding="utf-8") as f:
               json.dump(data, f, indent=2)
@@ -95,6 +98,7 @@ jobs:
           html = re.sub(r'(<span class="app-version-tag trim-ver">)[^<]+(</span>)', rf'\g<1>{data["trim"]}\2', html)
           html = re.sub(r'(<span class="app-version-tag stem-ver">)[^<]+(</span>)', rf'\g<1>{data["stem"]}\2', html)
           html = re.sub(r'(<span class="app-version-tag beam-ver">)[^<]+(</span>)', rf'\g<1>{data["beam"]}\2', html)
+          html = re.sub(r'(<span class="app-version-tag dram-ver">)[^<]+(</span>)', rf'\g<1>{data["dram"]}\2', html)
           html = re.sub(r'(<span class="prism-ver">)[^<]+(</span>)', rf'\g<1>{data["prism_suite"]["version"]}\2', html)
 
           with open("docs/index.html", "w", encoding="utf-8") as f:

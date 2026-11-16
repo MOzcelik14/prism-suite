@@ -114,6 +114,10 @@
           <span>beaM.</span>
           <span class="beam-ver" style="opacity:0.75;font-family:var(--font-mono);font-size:0.78rem;">v1.0.0</span>
         </button>
+        <button type="button" class="showcase-tab" data-showcase="dram" onclick="switchShowcase('dram', this)">
+          <span>draM.</span>
+          <span class="dram-ver" style="opacity:0.75;font-family:var(--font-mono);font-size:0.78rem;">v0.0.1</span>
+        </button>
       </div>
 
       <div class="showcase-frame reveal">
@@ -136,6 +140,9 @@
             </div>
             <div class="showcase-panel" id="panel-beam">
               <img src="assets/screenshots/beam-studio.png" alt="beaM. fotoğraf stüdyosu" loading="lazy" />
+            </div>
+            <div class="showcase-panel" id="panel-dram">
+              <img src="assets/screenshots/dram-studio.png" alt="draM. senaryo editörü" loading="lazy" />
             </div>
           </div>
 
@@ -338,6 +345,51 @@
             </a>
           </div>
         </article>
+
+        <!-- draM. -->
+        <article class="app-card card-screenplay reveal">
+          <div class="app-card-shot" onclick="focusShowcase('dram')">
+            <img src="assets/screenshots/dram-studio.png" alt="draM. ekran görüntüsü" loading="lazy" />
+          </div>
+
+          <div class="app-card-header">
+            <div class="app-icon-wrapper">
+              <img src="assets/apps/dram.png" alt="draM." class="app-icon" />
+            </div>
+            <span class="app-badge badge-screenplay" data-i18n="badge-screenplay">Senaryo</span>
+          </div>
+
+          <div class="app-card-name-row">
+            <h3 class="app-card-name">draM.</h3>
+            <span class="app-version-tag dram-ver">v0.0.1</span>
+          </div>
+          <div class="app-card-tagline" data-i18n="dram-tagline">
+            Türkçe ve İngilizce senaryo kurallarına tam uyumlu senaryo editörü
+          </div>
+
+          <ul class="app-features">
+            <li>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span data-i18n="dram-feat-1">Sahne başlığı, diyalog ve aksiyon elemanları arasında otomatik geçiş</span>
+            </li>
+            <li>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span data-i18n="dram-feat-2">Courier Prime gömülü baskıya hazır PDF çıktısı ve doğrudan yazdırma</span>
+            </li>
+            <li>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span data-i18n="dram-feat-3">Fountain, Final Draft (.fdx) ve Fade In formatlarıyla tam uyum</span>
+            </li>
+          </ul>
+
+          <div class="app-card-footer">
+            <span style="font-size: 0.8rem; color: var(--text-dim);" data-i18n="status-active">Aktif Geliştirme</span>
+            <a href="https://github.com/MOzcelik14/draM" target="_blank" rel="noopener" class="app-repo-link">
+              <span data-i18n="link-repo">İncele</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+            </a>
+          </div>
+        </article>
       </div>
     </div>
   </section>
@@ -523,6 +575,7 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
             <li><a href="https://github.com/MOzcelik14/triM" target="_blank" rel="noopener">triM. (Video)</a></li>
             <li><a href="https://github.com/MOzcelik14/steM" target="_blank" rel="noopener">steM. (Ses)</a></li>
             <li><a href="https://github.com/MOzcelik14/beaM" target="_blank" rel="noopener">beaM. (Fotoğraf)</a></li>
+            <li><a href="https://github.com/MOzcelik14/draM" target="_blank" rel="noopener">draM. (Senaryo)</a></li>
           </ul>
         </div>
 
@@ -562,6 +615,7 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
         'caption-trim': 'Çok kanallı zaman çizelgesi, canlı renk tekerlekleri ve donanım hızlandırmalı dışa aktarma.',
         'caption-stem': 'Tahribatsız çok kanallı ses düzenleme, spektral analiz ve gerçek zamanlı efektler.',
         'caption-beam': 'Tahribatsız RAW fotoğraf geliştirme, ton eğrisi, 8 bant HSL ve yerel kütüphane yönetimi.',
+        'caption-dram': 'Türkçe ve İngilizce senaryo kurallarına uygun yazım, Courier Prime PDF çıktısı ve sahne gezgini.',
         'link-explore': 'Detayları Gör',
         'apps-section-title': 'Ekosistemdeki Tüm Uygulamalar',
         'apps-section-desc': 'Her uygulama bilgisayarınızda doğrudan ve bağımsız çalışır. Başlatıcı ve tüm yaratıcı araçları aşağıda inceleyebilirsiniz.',
@@ -569,6 +623,7 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
         'badge-video': 'Video',
         'badge-audio': 'Ses',
         'badge-photo': 'Fotoğraf',
+        'badge-screenplay': 'Senaryo',
         'prism-tagline': 'Tüm paketi kuran, doğrulayan ve güncel tutan masaüstü başlatıcı',
         'prism-feat-1': 'Tek tıkla uygulama kurulumu, güncelleme ve eski sürüme geri alma',
         'prism-feat-2': 'İmza ve bütünlük doğrulamasıyla güvenli paket dağıtımı',
@@ -585,6 +640,10 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
         'beam-feat-1': 'Kamera RAW dosyalarını orijinale dokunmadan düzenleme',
         'beam-feat-2': 'Ton eğrisi, 8 bant HSL renk kontrolü ve öncesi/sonrası kıyaslama',
         'beam-feat-3': 'Yerel arşiv tarama, yıldız puanlama ve toplu dışa aktarma',
+        'dram-tagline': 'Türkçe ve İngilizce senaryo kurallarına tam uyumlu senaryo editörü',
+        'dram-feat-1': 'Sahne başlığı, diyalog ve aksiyon elemanları arasında otomatik geçiş',
+        'dram-feat-2': 'Courier Prime gömülü baskıya hazır PDF çıktısı ve doğrudan yazdırma',
+        'dram-feat-3': 'Fountain, Final Draft (.fdx) ve Fade In formatlarıyla tam uyum',
         'status-stable': 'Kararlı Sürüm',
         'status-active': 'Aktif Geliştirme',
         'link-repo': 'İncele',
@@ -640,6 +699,7 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
         'caption-trim': 'Multi-track timeline, live color wheels, and hardware-accelerated export.',
         'caption-stem': 'Non-destructive multi-track audio editing, spectral analysis, and real-time effects.',
         'caption-beam': 'Non-destructive RAW photo editing, tone curves, 8-band HSL, and local library management.',
+        'caption-dram': 'Screenplay writing with Turkish & English rules, Courier Prime PDF export, and scene navigator.',
         'link-explore': 'Explore Details',
         'apps-section-title': 'Every Application in the Suite',
         'apps-section-desc': 'Each application runs natively and independently on your machine. Explore the launcher and all creative tools below.',
@@ -647,6 +707,7 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
         'badge-video': 'Video',
         'badge-audio': 'Audio',
         'badge-photo': 'Photo',
+        'badge-screenplay': 'Screenplay',
         'prism-tagline': 'Desktop launcher that installs, verifies, and updates the entire suite',
         'prism-feat-1': 'One-click install, update, and rollback to previous versions',
         'prism-feat-2': 'Cryptographic signature and checksum verification on every download',
@@ -663,6 +724,10 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
         'beam-feat-1': 'Edit camera RAW files while keeping originals untouched',
         'beam-feat-2': 'Tone curves, 8-band HSL color grading, and split comparisons',
         'beam-feat-3': 'Local folder catalog, star ratings, and batch export',
+        'dram-tagline': 'Screenplay writing studio with Turkish & English formatting',
+        'dram-feat-1': 'Seamless element flow across scene headings, dialogue, and action',
+        'dram-feat-2': 'Print-ready PDF export with embedded Courier Prime and direct printing',
+        'dram-feat-3': 'Full import/export compatibility with Fountain, Final Draft (.fdx), and Fade In',
         'status-stable': 'Stable',
         'status-active': 'Active Development',
         'link-repo': 'Explore',
@@ -707,7 +772,8 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
       prism: { title: 'prisM. Suite — Application Hub', captionKey: 'caption-prism', url: 'https://github.com/MOzcelik14/prism-suite' },
       trim: { title: 'triM. — Video Studio', captionKey: 'caption-trim', url: 'https://github.com/MOzcelik14/triM' },
       stem: { title: 'steM. — Audio Workstation', captionKey: 'caption-stem', url: 'https://github.com/MOzcelik14/steM' },
-      beam: { title: 'beaM. — RAW Photo Studio', captionKey: 'caption-beam', url: 'https://github.com/MOzcelik14/beaM' }
+      beam: { title: 'beaM. — RAW Photo Studio', captionKey: 'caption-beam', url: 'https://github.com/MOzcelik14/beaM' },
+      dram: { title: 'draM. — Screenplay Editor', captionKey: 'caption-dram', url: 'https://github.com/MOzcelik14/draM' }
     };
 
     function switchShowcase(key, btn) {
@@ -852,6 +918,8 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
         if (s) setVersionIfNewer('.stem-ver', s);
         const b = localStorage.getItem('prism_beam_ver');
         if (b) setVersionIfNewer('.beam-ver', b);
+        const d = localStorage.getItem('prism_dram_ver');
+        if (d) setVersionIfNewer('.dram-ver', d);
         const p = localStorage.getItem('prism_suite_ver');
         if (p) setVersionIfNewer('.prism-ver', p);
       } catch (e) {}
@@ -865,6 +933,7 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
           if (m.trim) setVersionIfNewer('.trim-ver', m.trim, 'prism_trim_ver');
           if (m.stem) setVersionIfNewer('.stem-ver', m.stem, 'prism_stem_ver');
           if (m.beam) setVersionIfNewer('.beam-ver', m.beam, 'prism_beam_ver');
+          if (m.dram) setVersionIfNewer('.dram-ver', m.dram, 'prism_dram_ver');
           if (m.prism_suite) {
             if (m.prism_suite.version) setVersionIfNewer('.prism-ver', m.prism_suite.version, 'prism_suite_ver');
             applySuiteLinks(m.prism_suite);
@@ -898,6 +967,14 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
         .then(d => {
           if (d && (d.tag_name || d.name)) {
             setVersionIfNewer('.beam-ver', d.tag_name || d.name, 'prism_beam_ver');
+          }
+        }).catch(() => {});
+
+      fetch('https://api.github.com/repos/MOzcelik14/draM/releases/latest', fetchOpts)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d && (d.tag_name || d.name)) {
+            setVersionIfNewer('.dram-ver', d.tag_name || d.name, 'prism_dram_ver');
           }
         }).catch(() => {});
 

@@ -41,12 +41,13 @@ fn find_launcher_binary(dir: &Path) -> Result<PathBuf, InstallError> {
     ))
 }
 
-/// Applies self-update by safely extracting the updated archive and replacing current_exe.
+/// Applies self-update by safely extracting the updated archive and replacing `current_exe`
+/// (or a user-writable fallback path), returning the path to the updated executable.
 pub fn apply_self_update(
     archive_filename: &str,
     archive_bytes: &[u8],
     current_exe: &Path,
-) -> Result<(), InstallError> {
+) -> Result<PathBuf, InstallError> {
     let rand_id = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_nanos())
@@ -155,36 +156,113 @@ pub fn apply_self_update(
 
         let _ = fs::remove_file(&backup_path);
         let _ = fs::remove_dir_all(&temp_dir);
+        Ok(target_exe)
     }
 
     #[cfg(windows)]
     {
-        // On Windows, running binaries are file-locked; staging & helper script handles post-exit replacement
-        let new_target = PathBuf::from(format!("{}.new", current_exe.display()));
-        let _ = fs::remove_file(&new_target);
-        fs::copy(&new_binary, &new_target)?;
+        use std::os::windows::process::CommandExt;
+        use std::process::{Command, Stdio};
 
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+        // Check if current_exe's directory is writable; otherwise fall back to %LOCALAPPDATA%\prisM\bin
+        let is_writable = current_exe
+            .parent()
+            .map(|p| {
+                let test_path = p.join(format!(".prism_write_test_{}", rand_id));
+                match fs::OpenOptions::new()
+                    .write(true)
+                    .create_new(true)
+                    .open(&test_path)
+                {
+                    Ok(_) => {
+                        let _ = fs::remove_file(&test_path);
+                        true
+                    }
+                    Err(_) => false,
+                }
+            })
+            .unwrap_or(false);
+
+        let target_exe = if is_writable {
+            current_exe.to_path_buf()
+        } else if let Some(base) = directories::BaseDirs::new() {
+            let user_bin = base.data_local_dir().join("prisM").join("bin");
+            fs::create_dir_all(&user_bin)?;
+            let bin_name = current_exe
+                .file_name()
+                .unwrap_or_else(|| std::ffi::OsStr::new("prism.exe"));
+            user_bin.join(bin_name)
+        } else {
+            current_exe.to_path_buf()
+        };
+
+        // On Windows, running binaries cannot be overwritten/deleted, but CAN be renamed in-place!
+        // Try immediate rename-in-place first so target_exe on disk is already the new version.
+        let old_target = PathBuf::from(format!("{}.old", target_exe.display()));
+        let new_target = PathBuf::from(format!("{}.new", target_exe.display()));
+        let _ = fs::remove_file(&old_target);
+        let _ = fs::remove_file(&new_target);
+
+        let replaced_immediately = if target_exe.exists() {
+            if fs::rename(&target_exe, &old_target).is_ok() {
+                if fs::copy(&new_binary, &target_exe).is_ok() {
+                    true
+                } else {
+                    let _ = fs::rename(&old_target, &target_exe);
+                    false
+                }
+            } else {
+                false
+            }
+        } else {
+            fs::copy(&new_binary, &target_exe).is_ok()
+        };
+
+        if !replaced_immediately {
+            fs::copy(&new_binary, &new_target)?;
+        }
+
+        let target_dir = target_exe
+            .parent()
+            .unwrap_or_else(|| Path::new("."))
+            .to_path_buf();
+
+        // Use ping instead of `timeout` (which fails when stdin is null/redirected) and invoke via `cmd.exe /C`.
         let bat_content = format!(
             "@echo off\r\n\
             :wait\r\n\
-            timeout /t 1 /nobreak >nul\r\n\
-            tasklist /fi \"PID eq {pid}\" | find \"{pid}\" >nul\r\n\
+            ping -n 2 127.0.0.1 >nul\r\n\
+            tasklist /fi \"PID eq {pid}\" 2>nul | find \"{pid}\" >nul\r\n\
             if not errorlevel 1 goto wait\r\n\
-            move /y \"{new_exe}\" \"{target_exe}\" >nul\r\n\
-            start \"\" \"{target_exe}\"\r\n\
-            del \"%~f0\" & exit\r\n",
+            if exist \"{new_exe}\" move /y \"{new_exe}\" \"{target_exe}\" >nul\r\n\
+            if exist \"{old_exe}\" del /f /q \"{old_exe}\" >nul 2>&1\r\n\
+            rmdir /s /q \"{temp_dir}\" >nul 2>&1\r\n\
+            start \"\" /D \"{target_dir}\" \"{target_exe}\"\r\n\
+            del \"%~f0\" >nul 2>&1 & exit\r\n",
             pid = std::process::id(),
             new_exe = new_target.display(),
-            target_exe = current_exe.display(),
+            old_exe = old_target.display(),
+            target_exe = target_exe.display(),
+            target_dir = target_dir.display(),
+            temp_dir = temp_dir.display(),
         );
 
         let bat_path = std::env::temp_dir().join(format!("prism-update-helper-{}.bat", rand_id));
         fs::write(&bat_path, bat_content)?;
 
-        let _ = crate::process::launch_detached(&bat_path, std::env::temp_dir().as_path());
-    }
+        Command::new("cmd")
+            .args(["/C", &bat_path.to_string_lossy()])
+            .current_dir(std::env::temp_dir())
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()?;
 
-    Ok(())
+        Ok(target_exe)
+    }
 }
 
 #[cfg(test)]
