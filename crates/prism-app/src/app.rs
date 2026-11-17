@@ -88,6 +88,20 @@ pub enum AppEvent {
     },
 }
 
+#[derive(Clone)]
+struct EventSender {
+    tx: Sender<AppEvent>,
+    ctx: egui::Context,
+}
+
+impl EventSender {
+    fn send(&self, event: AppEvent) -> bool {
+        let ok = self.tx.send(event).is_ok();
+        self.ctx.request_repaint();
+        ok
+    }
+}
+
 /// Main application structure for prisM. Suite launcher.
 pub struct PrismApp {
     pub(crate) catalog: AppCatalog,
@@ -96,7 +110,7 @@ pub struct PrismApp {
     pub(crate) install_mgr: InstallationManager,
     net_client: NetworkClient,
     tokio_runtime: tokio::runtime::Runtime,
-    event_tx: Sender<AppEvent>,
+    event_tx: EventSender,
     event_rx: Receiver<AppEvent>,
     pub(crate) markdown_cache: CommonMarkCache,
     pub(crate) states: HashMap<AppId, AppInstallState>,
@@ -121,7 +135,7 @@ pub struct PrismApp {
 }
 
 impl PrismApp {
-    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let catalog = AppCatalog::load_embedded();
         let config = LauncherConfig::load();
         let initial_lang = config.language.as_deref().map(Language::from_code);
@@ -134,7 +148,11 @@ impl PrismApp {
             .build()
             .expect("failed to start tokio runtime");
 
-        let (event_tx, event_rx) = crossbeam_channel::unbounded();
+        let (tx, event_rx) = crossbeam_channel::unbounded();
+        let event_tx = EventSender {
+            tx,
+            ctx: cc.egui_ctx.clone(),
+        };
 
         // Write shared preferences for child applications
         let shared_prefs = SharedPreferences {
@@ -875,6 +893,32 @@ impl eframe::App for PrismApp {
         }
 
         crate::ui::render_app_ui(self, ctx);
+
+        let has_active_transfer = self.is_checking_releases
+            || matches!(
+                self.launcher_update_state,
+                LauncherSelfUpdateState::Updating { .. }
+            )
+            || self.states.values().any(|s| {
+                matches!(
+                    s,
+                    AppInstallState::Downloading { .. }
+                        | AppInstallState::Verifying
+                        | AppInstallState::Installing
+                )
+            });
+
+        let has_running_or_status = self.status_message.is_some()
+            || self
+                .states
+                .values()
+                .any(|s| matches!(s, AppInstallState::Running));
+
+        if has_active_transfer {
+            ctx.request_repaint_after(std::time::Duration::from_millis(50));
+        } else if has_running_or_status {
+            ctx.request_repaint_after(std::time::Duration::from_millis(500));
+        }
     }
 }
 
