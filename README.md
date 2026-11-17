@@ -42,35 +42,35 @@
 
 ## Download & Installation
 
-Pre-built packages for **v1.0.0** are available on the [GitHub Releases](https://github.com/MOzcelik14/prism-suite/releases) page:
+Pre-built packages for **v1.1.0** are available on the [GitHub Releases](https://github.com/MOzcelik14/prism-suite/releases) page:
 
 | Operating System | Package | File |
 | :--- | :--- | :--- |
-| **Debian / Ubuntu** | `.deb` | `prism_1.0.0_amd64.deb` |
-| **Fedora / RHEL** | `.rpm` | `prism-1.0.0-1.x86_64.rpm` |
-| **Linux (Universal)** | `.AppImage` | `prism-1.0.0-x86_64.AppImage` |
-| **Linux (Portable)** | `.tar.gz` | `prism-1.0.0-linux-x86_64.tar.gz` |
-| **Windows (64-bit)** | `.zip` | `prism-1.0.0-windows-x86_64.zip` |
+| **Debian / Ubuntu** | `.deb` | `prism_1.1.0_amd64.deb` |
+| **Fedora / RHEL** | `.rpm` | `prism-1.1.0-1.x86_64.rpm` |
+| **Linux (Universal)** | `.AppImage` | `prism-1.1.0-x86_64.AppImage` |
+| **Linux (Portable)** | `.tar.gz` | `prism-1.1.0-linux-x86_64.tar.gz` |
+| **Windows (64-bit)** | `.zip` | `prism-1.1.0-windows-x86_64.zip` |
 
 ### Debian / Ubuntu
 ```bash
-sudo dpkg -i prism_1.0.0_amd64.deb
+sudo dpkg -i prism_1.1.0_amd64.deb
 sudo apt-get install -f
 ```
 
 ### Fedora / RHEL
 ```bash
-sudo dnf install ./prism-1.0.0-1.x86_64.rpm
+sudo dnf install ./prism-1.1.0-1.x86_64.rpm
 ```
 
 ### Linux AppImage
 ```bash
-chmod +x prism-1.0.0-x86_64.AppImage
-./prism-1.0.0-x86_64.AppImage
+chmod +x prism-1.1.0-x86_64.AppImage
+./prism-1.1.0-x86_64.AppImage
 ```
 
 ### Windows
-1. Extract `prism-1.0.0-windows-x86_64.zip` to a folder of your choice.
+1. Extract `prism-1.1.0-windows-x86_64.zip` to a folder of your choice.
 2. Run `prism.exe`.
 
 ---

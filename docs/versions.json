@@ -1,14 +1,14 @@
 {
   "prism_suite": {
-    "version": "v1.0.0",
-    "deb_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.0.0/prism_1.0.0_amd64.deb",
-    "deb_name": "prism_1.0.0_amd64.deb",
-    "rpm_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.0.0/prism-1.0.0-1.x86_64.rpm",
-    "rpm_name": "prism-1.0.0-1.x86_64.rpm",
-    "appimage_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.0.0/prism-1.0.0-x86_64.AppImage",
-    "appimage_name": "prism-1.0.0-x86_64.AppImage",
-    "win_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.0.0/prism-1.0.0-windows-x86_64.zip",
-    "win_name": "prism-1.0.0-windows-x86_64.zip"
+    "version": "v1.1.0",
+    "deb_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.1.0/prism_1.1.0_amd64.deb",
+    "deb_name": "prism_1.1.0_amd64.deb",
+    "rpm_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.1.0/prism-1.1.0-1.x86_64.rpm",
+    "rpm_name": "prism-1.1.0-1.x86_64.rpm",
+    "appimage_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.1.0/prism-1.1.0-x86_64.AppImage",
+    "appimage_name": "prism-1.1.0-x86_64.AppImage",
+    "win_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.1.0/prism-1.1.0-windows-x86_64.zip",
+    "win_name": "prism-1.1.0-windows-x86_64.zip"
   },
   "trim": "v2.0.2",
   "stem": "v0.5.1",
