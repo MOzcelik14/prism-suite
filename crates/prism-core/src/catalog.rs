@@ -93,7 +93,7 @@ mod tests {
         let stem = catalog.get(AppId::Stem).expect("steM. must be in catalog");
         assert_eq!(stem.display_name, "steM.");
         assert_eq!(stem.repository, "https://github.com/MOzcelik14/steM");
-        assert_eq!(stem.default_branch, "main");
+        assert_eq!(stem.default_branch, "master");
 
         let beam = catalog.get(AppId::Beam).expect("beaM. must be in catalog");
         assert_eq!(beam.display_name, "beaM.");
