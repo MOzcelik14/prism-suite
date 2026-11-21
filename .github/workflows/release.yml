@@ -137,7 +137,7 @@ jobs:
           retention-days: 30
 
   macos:
-    name: macOS build (arm64 tar.gz)
+    name: macOS build (arm64 dmg + tar.gz)
     needs: rust-tests
     runs-on: macos-latest
     steps:
@@ -148,7 +148,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Build macOS binary
         run: cargo build --locked --release -p prism-app
-      - name: Package macOS tar.gz
+      - name: Package macOS dmg and tar.gz
         run: |
           set -euo pipefail
           RAW_VER="${{ github.ref_name }}"
@@ -158,6 +158,8 @@ jobs:
             VER="${RAW_VER#v}"
           fi
           mkdir -p dist
+
+          # Portable tar.gz
           STAGE="$(mktemp -d)"
           PKG="${STAGE}/prism-${VER}-macos-arm64"
           mkdir -p "${PKG}"
@@ -166,10 +168,55 @@ jobs:
           cp README.md LICENSE "${PKG}/"
           tar -C "${STAGE}" -czf "dist/prism-${VER}-macos-arm64.tar.gz" "prism-${VER}-macos-arm64"
           rm -rf "${STAGE}"
+
+          # macOS .app bundle + .dmg
+          DMG_STAGE="$(mktemp -d)"
+          APP_DIR="${DMG_STAGE}/prisM. Suite.app"
+          mkdir -p "${APP_DIR}/Contents/MacOS" "${APP_DIR}/Contents/Resources"
+          cp target/release/prism "${APP_DIR}/Contents/MacOS/prism"
+          chmod +x "${APP_DIR}/Contents/MacOS/prism"
+
+          if [ -f assets/icons/prism_512x512.png ]; then
+            ICONSET="$(mktemp -d)/prism.iconset"
+            mkdir -p "${ICONSET}"
+            sips -z 16 16     assets/icons/prism_512x512.png --out "${ICONSET}/icon_16x16.png" >/dev/null
+            sips -z 32 32     assets/icons/prism_512x512.png --out "${ICONSET}/icon_16x16@2x.png" >/dev/null
+            sips -z 32 32     assets/icons/prism_512x512.png --out "${ICONSET}/icon_32x32.png" >/dev/null
+            sips -z 64 64     assets/icons/prism_512x512.png --out "${ICONSET}/icon_32x32@2x.png" >/dev/null
+            sips -z 128 128   assets/icons/prism_512x512.png --out "${ICONSET}/icon_128x128.png" >/dev/null
+            sips -z 256 256   assets/icons/prism_512x512.png --out "${ICONSET}/icon_128x128@2x.png" >/dev/null
+            sips -z 256 256   assets/icons/prism_512x512.png --out "${ICONSET}/icon_256x256.png" >/dev/null
+            sips -z 512 512   assets/icons/prism_512x512.png --out "${ICONSET}/icon_256x256@2x.png" >/dev/null
+            sips -z 512 512   assets/icons/prism_512x512.png --out "${ICONSET}/icon_512x512.png" >/dev/null
+            iconutil -c icns "${ICONSET}" -o "${APP_DIR}/Contents/Resources/prism.icns"
+          fi
+
+          cat > "${APP_DIR}/Contents/Info.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleExecutable</key><string>prism</string>
+            <key>CFBundleIdentifier</key><string>com.mozcelik14.prism-suite</string>
+            <key>CFBundleName</key><string>prisM. Suite</string>
+            <key>CFBundleVersion</key><string>${VER}</string>
+            <key>CFBundleShortVersionString</key><string>${VER}</string>
+            <key>CFBundlePackageType</key><string>APPL</string>
+            <key>CFBundleIconFile</key><string>prism</string>
+            <key>NSHighResolutionCapable</key><true/>
+          </dict>
+          </plist>
+          PLIST
+
+          ln -s /Applications "${DMG_STAGE}/Applications"
+          hdiutil create -volname "prisM. Suite ${VER}" -srcfolder "${DMG_STAGE}" -ov -format UDZO "dist/prism-${VER}-macos-arm64.dmg"
+          rm -rf "${DMG_STAGE}"
       - uses: actions/upload-artifact@v4
         with:
           name: prism-macos-package
-          path: dist/*.tar.gz
+          path: |
+            dist/*.dmg
+            dist/*.tar.gz
           if-no-files-found: error
           retention-days: 30
 
@@ -194,9 +241,10 @@ jobs:
           test "$(find dist -maxdepth 1 -name '*.deb' | wc -l)" -eq 1
           test "$(find dist -maxdepth 1 -name '*.rpm' | wc -l)" -eq 1
           test "$(find dist -maxdepth 1 -name '*.AppImage' | wc -l)" -eq 1
+          test "$(find dist -maxdepth 1 -name '*.dmg' | wc -l)" -eq 1
           test "$(find dist -maxdepth 1 -name '*.tar.gz' | wc -l)" -eq 2
           test "$(find dist -maxdepth 1 -name '*.zip' | wc -l)" -eq 1
-          (cd dist && sha256sum -- *.deb *.rpm *.AppImage *.tar.gz *.zip > SHA256SUMS.txt)
+          (cd dist && sha256sum -- *.deb *.rpm *.AppImage *.dmg *.tar.gz *.zip > SHA256SUMS.txt)
           cat dist/SHA256SUMS.txt
       - name: Sign checksums with Minisign
         if: env.MINISIGN_KEY != ''
@@ -220,6 +268,7 @@ jobs:
             dist/*.deb
             dist/*.rpm
             dist/*.AppImage
+            dist/*.dmg
             dist/*.tar.gz
             dist/*.zip
             dist/SHA256SUMS.txt
