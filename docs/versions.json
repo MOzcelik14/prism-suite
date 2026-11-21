@@ -10,7 +10,7 @@
     "win_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.1/prism-1.2.1-windows-x86_64.zip",
     "win_name": "prism-1.2.1-windows-x86_64.zip"
   },
-  "trim": "v2.2.1",
+  "trim": "v2.5.0",
   "stem": "v0.6.2",
   "beam": "v1.2.7",
   "dram": "v1.0.0"
