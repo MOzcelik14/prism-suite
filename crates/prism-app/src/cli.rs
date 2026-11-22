@@ -26,7 +26,12 @@ pub enum CliCommand {
 
 /// Parses an application identifier case-insensitively (`trim`, `stem`, `beam`, `dram`, with or without trailing `.`).
 pub fn parse_app_id(raw: &str) -> Result<AppId, String> {
-    match raw.trim().trim_end_matches('.').to_ascii_lowercase().as_str() {
+    match raw
+        .trim()
+        .trim_end_matches('.')
+        .to_ascii_lowercase()
+        .as_str()
+    {
         "trim" => Ok(AppId::Trim),
         "stem" => Ok(AppId::Stem),
         "beam" => Ok(AppId::Beam),
@@ -181,8 +186,8 @@ fn execute(command: CliCommand) -> Result<(), String> {
                         project_path.display()
                     ));
                 }
-                let abs_path = std::fs::canonicalize(project_path)
-                    .unwrap_or_else(|_| project_path.clone());
+                let abs_path =
+                    std::fs::canonicalize(project_path).unwrap_or_else(|_| project_path.clone());
                 let arg = abs_path.to_string_lossy().into_owned();
                 let pid = install_mgr
                     .launch_app_with_args(entry, &[&arg])
@@ -226,7 +231,11 @@ fn run_list(offline: bool) -> Result<(), String> {
     let config = LauncherConfig::load();
     let install_mgr = InstallationManager::new(config.custom_install_dir.clone());
     let client = NetworkClient::new().map_err(|e| format!("Network client error: {e}"))?;
-    let rt = if offline { None } else { Some(build_runtime()?) };
+    let rt = if offline {
+        None
+    } else {
+        Some(build_runtime()?)
+    };
 
     println!("{:<8} {:<14} {:<14} LATEST", "ID", "APP", "INSTALLED");
     for entry in catalog.all() {
@@ -394,7 +403,10 @@ fn run_update(target: Option<AppId>) -> Result<(), String> {
             )?;
             updated_any = true;
         } else {
-            println!("{} is already up to date (v{}).", entry.display_name, current);
+            println!(
+                "{} is already up to date (v{}).",
+                entry.display_name, current
+            );
         }
     }
 

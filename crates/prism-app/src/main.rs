@@ -31,7 +31,6 @@ fn main() -> ExitCode {
 }
 
 fn run_gui() -> eframe::Result<()> {
-
     // Window icon is rasterized from the vector logo; falls back to the bundled bitmap.
     let icon_data = match logo::render_logo_rgba(256) {
         Some(premul) => egui::IconData {

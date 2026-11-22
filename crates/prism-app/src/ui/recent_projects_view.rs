@@ -18,8 +18,7 @@ fn format_timestamp(unix_secs: u64) -> String {
     if unix_secs == 0 {
         return String::new();
     }
-    let dt = DateTime::<Utc>::from_timestamp(unix_secs as i64, 0)
-        .map(|u| u.with_timezone(&Local));
+    let dt = DateTime::<Utc>::from_timestamp(unix_secs as i64, 0).map(|u| u.with_timezone(&Local));
     match dt {
         Some(local) => local.format("%Y-%m-%d %H:%M").to_string(),
         None => String::new(),
