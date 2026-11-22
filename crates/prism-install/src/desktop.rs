@@ -1,13 +1,9 @@
 // Copyright (C) 2026 Murat Özçelik <mozcelik14>
 // SPDX-License-Identifier: GPL-3.0-only
 
-#[cfg(target_os = "linux")]
 use std::fs;
-use std::path::Path;
-#[cfg(target_os = "linux")]
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-#[cfg(target_os = "linux")]
 use directories::BaseDirs;
 use prism_core::catalog::AppEntry;
 use thiserror::Error;
@@ -21,11 +17,15 @@ pub enum DesktopError {
     NoUserDirs,
 }
 
-/// Generates and installs desktop integration (.desktop file on Linux, shortcut on Windows).
+/// Generates and installs desktop integration (.desktop file on Linux, .app bundle on macOS, Start Menu shortcut on Windows).
 pub fn install_desktop_entry(app: &AppEntry, binary_path: &Path) -> Result<(), DesktopError> {
     #[cfg(target_os = "linux")]
     {
         install_linux_desktop_file(app, binary_path)?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        install_macos_app_bundle(app, binary_path)?;
     }
     #[cfg(target_os = "windows")]
     {
@@ -39,6 +39,10 @@ pub fn remove_desktop_entry(app: &AppEntry) -> Result<(), DesktopError> {
     #[cfg(target_os = "linux")]
     {
         remove_linux_desktop_file(app)?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        remove_macos_app_bundle(app)?;
     }
     #[cfg(target_os = "windows")]
     {
@@ -181,15 +185,144 @@ fn remove_linux_desktop_file(app: &AppEntry) -> Result<(), DesktopError> {
     Ok(())
 }
 
-#[cfg(target_os = "windows")]
-fn install_windows_shortcut(_app: &AppEntry, _binary_path: &Path) -> Result<(), DesktopError> {
-    // Windows shortcut generation stub
+#[cfg(target_os = "macos")]
+fn macos_app_bundle_path(app: &AppEntry) -> Result<PathBuf, DesktopError> {
+    let base = BaseDirs::new().ok_or(DesktopError::NoUserDirs)?;
+    let clean_name = app.display_name.trim_end_matches('.');
+    Ok(base
+        .home_dir()
+        .join("Applications")
+        .join("prisM. Suite")
+        .join(format!("{clean_name}.app")))
+}
+
+#[cfg(target_os = "macos")]
+fn install_macos_app_bundle(app: &AppEntry, binary_path: &Path) -> Result<(), DesktopError> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let bundle_dir = macos_app_bundle_path(app)?;
+    let macos_dir = bundle_dir.join("Contents").join("MacOS");
+    fs::create_dir_all(&macos_dir)?;
+
+    let exec_name = &app.primary_binary_name;
+    let launcher_path = macos_dir.join(exec_name);
+    let quoted_bin = binary_path
+        .to_string_lossy()
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"");
+    let script = format!("#!/bin/sh\nexec \"{quoted_bin}\" \"$@\"\n");
+    fs::write(&launcher_path, script)?;
+
+    let mut perms = fs::metadata(&launcher_path)?.permissions();
+    perms.set_mode(0o755);
+    fs::set_permissions(&launcher_path, perms)?;
+
+    let bundle_name = app.display_name.trim_end_matches('.');
+    let plist = format!(
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleExecutable</key><string>{exec_name}</string>
+  <key>CFBundleIdentifier</key><string>com.mozcelik14.prism.{id}</string>
+  <key>CFBundleName</key><string>{bundle_name}</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>NSHighResolutionCapable</key><true/>
+</dict>
+</plist>
+"#,
+        id = app.id.as_str()
+    );
+    fs::write(bundle_dir.join("Contents").join("Info.plist"), plist)?;
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn remove_macos_app_bundle(app: &AppEntry) -> Result<(), DesktopError> {
+    if let Ok(bundle_dir) = macos_app_bundle_path(app) {
+        if bundle_dir.exists() {
+            fs::remove_dir_all(&bundle_dir)?;
+        }
+    }
     Ok(())
 }
 
 #[cfg(target_os = "windows")]
-fn remove_windows_shortcut(_app: &AppEntry) -> Result<(), DesktopError> {
-    // Windows shortcut cleanup stub
+fn windows_shortcut_path(app: &AppEntry) -> Result<PathBuf, DesktopError> {
+    let base = BaseDirs::new().ok_or(DesktopError::NoUserDirs)?;
+    let clean_name = app.display_name.trim_end_matches('.');
+    Ok(base
+        .data_dir()
+        .join("Microsoft")
+        .join("Windows")
+        .join("Start Menu")
+        .join("Programs")
+        .join("prisM. Suite")
+        .join(format!("{clean_name}.lnk")))
+}
+
+#[cfg(target_os = "windows")]
+fn ps_single_quote(s: &str) -> String {
+    s.replace('\'', "''")
+}
+
+#[cfg(target_os = "windows")]
+fn install_windows_shortcut(app: &AppEntry, binary_path: &Path) -> Result<(), DesktopError> {
+    use std::os::windows::process::CommandExt;
+    use std::process::Command;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+    let shortcut_path = windows_shortcut_path(app)?;
+    if let Some(parent) = shortcut_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    let work_dir = binary_path
+        .parent()
+        .map(|p| p.to_string_lossy().into_owned())
+        .unwrap_or_default();
+
+    let script = format!(
+        "$ws = New-Object -ComObject WScript.Shell; \
+         $s = $ws.CreateShortcut('{}'); \
+         $s.TargetPath = '{}'; \
+         $s.WorkingDirectory = '{}'; \
+         $s.Save()",
+        ps_single_quote(&shortcut_path.to_string_lossy()),
+        ps_single_quote(&binary_path.to_string_lossy()),
+        ps_single_quote(&work_dir),
+    );
+
+    let status = Command::new("powershell")
+        .args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-WindowStyle",
+            "Hidden",
+            "-Command",
+            &script,
+        ])
+        .creation_flags(CREATE_NO_WINDOW)
+        .status()?;
+
+    if !status.success() {
+        return Err(DesktopError::Io(std::io::Error::other(format!(
+            "powershell shortcut creation exited with {status}"
+        ))));
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn remove_windows_shortcut(app: &AppEntry) -> Result<(), DesktopError> {
+    if let Ok(shortcut_path) = windows_shortcut_path(app) {
+        if shortcut_path.exists() {
+            fs::remove_file(&shortcut_path)?;
+        }
+        if let Some(parent) = shortcut_path.parent() {
+            let _ = fs::remove_dir(parent);
+        }
+    }
     Ok(())
 }
 

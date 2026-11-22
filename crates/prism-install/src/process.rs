@@ -75,7 +75,86 @@ pub fn is_binary_running(binary_name: &str, known_pid: Option<u32>) -> bool {
         }
     }
 
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(target_os = "macos")]
+    {
+        if let Some(pid) = known_pid {
+            if let Ok(out) = Command::new("ps")
+                .args(["-p", &pid.to_string(), "-o", "stat=,comm="])
+                .output()
+            {
+                if out.status.success() {
+                    let stdout = String::from_utf8_lossy(&out.stdout);
+                    let line = stdout.trim();
+                    if let Some((stat, comm)) = line.split_once(char::is_whitespace) {
+                        let is_zombie = stat.trim().starts_with('Z');
+                        let base = Path::new(comm.trim())
+                            .file_name()
+                            .and_then(|n| n.to_str())
+                            .unwrap_or(comm.trim());
+                        if !is_zombie && base == clean_bin {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        if let Ok(status) = Command::new("pgrep")
+            .args(["-x", clean_bin])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+        {
+            if status.success() {
+                return true;
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+        let image_name = if clean_bin.to_ascii_lowercase().ends_with(".exe") {
+            clean_bin.to_string()
+        } else {
+            format!("{clean_bin}.exe")
+        };
+        let image_lower = image_name.to_ascii_lowercase();
+
+        if let Some(pid) = known_pid {
+            if let Ok(out) = Command::new("tasklist")
+                .args(["/FI", &format!("PID eq {pid}"), "/FO", "CSV", "/NH"])
+                .creation_flags(CREATE_NO_WINDOW)
+                .output()
+            {
+                let stdout = String::from_utf8_lossy(&out.stdout).to_ascii_lowercase();
+                if stdout.contains(&format!("\"{image_lower}\"")) {
+                    return true;
+                }
+            }
+        }
+
+        if let Ok(out) = Command::new("tasklist")
+            .args([
+                "/FI",
+                &format!("IMAGENAME eq {image_name}"),
+                "/FO",
+                "CSV",
+                "/NH",
+            ])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output()
+        {
+            let stdout = String::from_utf8_lossy(&out.stdout).to_ascii_lowercase();
+            if stdout.contains(&format!("\"{image_lower}\"")) {
+                return true;
+            }
+        }
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
     {
         let _ = clean_bin;
         let _ = known_pid;
@@ -102,12 +181,30 @@ fn is_zombie(pid: u32) -> bool {
 }
 
 #[cfg(test)]
-#[cfg(target_os = "linux")]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_process_detection_for_current_runner() {
+    fn test_process_detection_for_nonexistent_binary() {
         assert!(!is_binary_running("nonexistent_binary_xyz_12345", None));
+    }
+
+    #[test]
+    fn test_process_detection_for_current_process() {
+        #[cfg(target_os = "linux")]
+        let name = std::fs::read_to_string("/proc/self/comm")
+            .expect("/proc/self/comm must be readable")
+            .trim()
+            .to_string();
+
+        #[cfg(not(target_os = "linux"))]
+        let name = std::env::current_exe()
+            .expect("current_exe must resolve")
+            .file_name()
+            .and_then(|n| n.to_str())
+            .expect("current_exe must have valid filename")
+            .to_string();
+
+        assert!(is_binary_running(&name, Some(std::process::id())));
     }
 }

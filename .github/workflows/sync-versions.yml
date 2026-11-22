@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Fetch latest release versions and update docs
         env:
@@ -73,7 +73,7 @@ jobs:
               sv = fmt_ver(suite_rel.get("tag_name") or suite_rel.get("name"))
               data["prism_suite"]["version"] = sv
               assets = suite_rel.get("assets", [])
-              for key, ext in [("deb", ".deb"), ("rpm", ".rpm"), ("appimage", ".AppImage"), ("win", ".zip")]:
+              for key, ext in [("deb", ".deb"), ("rpm", ".rpm"), ("appimage", ".AppImage"), ("dmg", ".dmg"), ("win", ".zip")]:
                   url, name = find_asset(assets, ext)
                   if url and name:
                       data["prism_suite"][f"{key}_url"] = url

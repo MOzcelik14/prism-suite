@@ -18,7 +18,7 @@ jobs:
     name: Rust workspace tests
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
@@ -35,7 +35,7 @@ jobs:
     needs: rust-tests
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install packaging dependencies
         run: |
           sudo apt-get update
@@ -61,7 +61,7 @@ jobs:
           test "$(find dist -name '*.tar.gz' | wc -l)" -eq 1
           dpkg-deb -f dist/*.deb Package Version Architecture
           test -x target/release/prism
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: prism-ubuntu-packages
           path: |
@@ -80,7 +80,7 @@ jobs:
       - name: Install native build and packaging tools
         run: |
           dnf install -y git gcc gcc-c++ make pkgconf-pkg-config alsa-lib-devel libxcb-devel libxkbcommon-devel rpm-build curl ca-certificates python3 rust cargo
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build release binary on Fedora
         run: cargo build --locked --release -p prism-app
       - name: Package RPM
@@ -89,7 +89,7 @@ jobs:
         run: |
           test "$(find dist -name '*.rpm' | wc -l)" -eq 1
           rpm -qpl dist/*.rpm | grep -E '/usr/bin/prism$'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: prism-fedora-package
           path: dist/*.rpm
@@ -101,7 +101,7 @@ jobs:
     needs: rust-tests
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install stable Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -129,7 +129,7 @@ jobs:
           Copy-Item -Path "LICENSE" -Destination $stage -Force
           Compress-Archive -Path "$stage\*" -DestinationPath "dist\prism-$ver-windows-x86_64.zip" -Force
           Remove-Item -Recurse -Force $stage
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: prism-windows-package
           path: dist/*.zip
@@ -141,7 +141,7 @@ jobs:
     needs: rust-tests
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install stable Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Cache Cargo registry and target directory
@@ -211,7 +211,7 @@ jobs:
           ln -s /Applications "${DMG_STAGE}/Applications"
           hdiutil create -volname "prisM. Suite ${VER}" -srcfolder "${DMG_STAGE}" -ov -format UDZO "dist/prism-${VER}-macos-arm64.dmg"
           rm -rf "${DMG_STAGE}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: prism-macos-package
           path: |
@@ -228,8 +228,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
         with:
           pattern: prism-*-package*
           merge-multiple: true

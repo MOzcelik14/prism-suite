@@ -7,6 +7,8 @@
     "rpm_name": "prism-1.2.1-1.x86_64.rpm",
     "appimage_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.1/prism-1.2.1-x86_64.AppImage",
     "appimage_name": "prism-1.2.1-x86_64.AppImage",
+    "dmg_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.1/prism-1.2.1-macos-arm64.dmg",
+    "dmg_name": "prism-1.2.1-macos-arm64.dmg",
     "win_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.1/prism-1.2.1-windows-x86_64.zip",
     "win_name": "prism-1.2.1-windows-x86_64.zip"
   },

@@ -471,6 +471,7 @@
           <button type="button" class="tab-btn active" onclick="switchTab('deb', this)">Debian / Ubuntu</button>
           <button type="button" class="tab-btn" onclick="switchTab('rpm', this)">Fedora / RHEL</button>
           <button type="button" class="tab-btn" onclick="switchTab('appimage', this)">Linux AppImage</button>
+          <button type="button" class="tab-btn" onclick="switchTab('macos', this)">macOS (.dmg)</button>
           <button type="button" class="tab-btn" onclick="switchTab('win', this)">Windows 10/11</button>
         </div>
 
@@ -530,6 +531,25 @@ sudo dnf install ./prism-1.2.0-1.x86_64.rpm</div>
           <div class="code-block" id="appimage-cmd">curl -LO https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.0/prism-1.2.0-x86_64.AppImage
 chmod +x prism-1.2.0-x86_64.AppImage
 ./prism-1.2.0-x86_64.AppImage</div>
+        </div>
+
+        <!-- macOS -->
+        <div id="tab-macos" class="tab-content">
+          <div class="download-row">
+            <div class="download-info">
+              <h4>prisM. Suite <span class="prism-ver">v1.2.1</span> (macOS Apple Silicon)</h4>
+              <p data-i18n="dl-macos-desc">Apple Silicon (arm64) Mac'ler için sürükle-bırak kurulum içeren .dmg disk kalıbı.</p>
+            </div>
+            <a id="link-macos" href="https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.1/prism-1.2.1-macos-arm64.dmg" class="btn btn-primary" data-i18n="btn-download-macos">
+              macOS .dmg İndir
+            </a>
+          </div>
+          <div class="code-header">
+            <span data-i18n="terminal-install">Terminalden Kurulum</span>
+            <button type="button" class="copy-btn" onclick="copyCode('macos-cmd')"><span data-i18n="btn-copy">Kopyala</span></button>
+          </div>
+          <div class="code-block" id="macos-cmd">curl -LO https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.1/prism-1.2.1-macos-arm64.dmg
+open prism-1.2.1-macos-arm64.dmg</div>
         </div>
 
         <!-- Windows -->
@@ -666,10 +686,12 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
         'dl-deb-desc': 'Ubuntu 20.04+, Debian 11+, Linux Mint ve Pop!_OS için hazır kurulum paketi.',
         'dl-rpm-desc': 'Fedora 38+, RHEL 9+, CentOS Stream ve openSUSE için .rpm paketi.',
         'dl-appimage-desc': 'Kurulum gerektirmeden tüm modern x86_64 Linux dağıtımlarında doğrudan çalışır.',
+        'dl-macos-desc': 'Apple Silicon (arm64) Mac\'ler için sürükle-bırak kurulum içeren .dmg disk kalıbı.',
         'dl-win-desc': 'Taşınabilir ZIP paketi. Klasöre çıkarın ve prism.exe dosyasını çalıştırın.',
         'btn-download-deb': '.deb Paketini İndir',
         'btn-download-rpm': '.rpm Paketini İndir',
         'btn-download-appimage': '.AppImage İndir',
+        'btn-download-macos': 'macOS .dmg İndir',
         'btn-download-win': 'Windows ZIP İndir',
         'terminal-install': 'Terminalden Kurulum',
         'powershell-install': 'PowerShell ile İndirme',
@@ -750,10 +772,12 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
         'dl-deb-desc': 'Ready-to-install .deb package for Ubuntu 20.04+, Debian 11+, Linux Mint, and Pop!_OS.',
         'dl-rpm-desc': 'Native .rpm package for Fedora 38+, RHEL 9+, CentOS Stream, and openSUSE.',
         'dl-appimage-desc': 'Portable single-file binary for all modern x86_64 Linux distributions.',
+        'dl-macos-desc': 'Drag-and-drop .dmg disk image for Apple Silicon (arm64) Macs.',
         'dl-win-desc': 'Portable ZIP archive. Extract anywhere and run prism.exe.',
         'btn-download-deb': 'Download .deb',
         'btn-download-rpm': 'Download .rpm',
         'btn-download-appimage': 'Download .AppImage',
+        'btn-download-macos': 'Download macOS .dmg',
         'btn-download-win': 'Download Windows ZIP',
         'terminal-install': 'Terminal Install',
         'powershell-install': 'PowerShell Download',
@@ -902,6 +926,12 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
         const cmd = document.getElementById('appimage-cmd');
         if (cmd) cmd.textContent = `curl -LO ${suite.appimage_url}\nchmod +x ${suite.appimage_name}\n./${suite.appimage_name}`;
       }
+      if (suite.dmg_url && suite.dmg_name) {
+        const btn = document.getElementById('link-macos');
+        if (btn) btn.href = suite.dmg_url;
+        const cmd = document.getElementById('macos-cmd');
+        if (cmd) cmd.textContent = `curl -LO ${suite.dmg_url}\nopen ${suite.dmg_name}`;
+      }
       if (suite.win_url) {
         const btn = document.getElementById('link-win');
         if (btn) btn.href = suite.win_url;
@@ -988,6 +1018,7 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
             const deb = d.assets.find(a => a.name.endsWith('.deb'));
             const rpm = d.assets.find(a => a.name.endsWith('.rpm'));
             const appimage = d.assets.find(a => a.name.endsWith('.AppImage'));
+            const dmg = d.assets.find(a => a.name.endsWith('.dmg'));
             const win = d.assets.find(a => a.name.endsWith('.zip'));
             applySuiteLinks({
               deb_url: deb && deb.browser_download_url,
@@ -996,6 +1027,8 @@ Expand-Archive -Path "prism.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\pr
               rpm_name: rpm && rpm.name,
               appimage_url: appimage && appimage.browser_download_url,
               appimage_name: appimage && appimage.name,
+              dmg_url: dmg && dmg.browser_download_url,
+              dmg_name: dmg && dmg.name,
               win_url: win && win.browser_download_url,
             });
           }
