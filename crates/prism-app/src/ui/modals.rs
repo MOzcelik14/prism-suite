@@ -13,7 +13,6 @@ use prism_core::branding::{
 };
 use prism_core::catalog::AppId;
 use prism_core::config::UpdateFrequency;
-use prism_core::shared::SharedPreferences;
 use prism_core::state::{AppInstallState, ReleaseChannel};
 use prism_i18n::Language;
 use prism_install::InstallationManager;
@@ -564,11 +563,9 @@ pub fn render_settings_window(app: &mut PrismApp, ctx: &egui::Context) {
                                 app.i18n.set_language(Language::Turkish);
                                 app.config.language = Some("tr".to_string());
                                 let _ = app.config.save();
-                                let prefs = SharedPreferences {
-                                    language: "tr".to_string(),
-                                    launcher_version: SUITE_VERSION.to_string(),
-                                };
-                                let _ = prefs.save();
+                                app.shared_prefs.language = "tr".to_string();
+                                app.shared_prefs.launcher_version = SUITE_VERSION.to_string();
+                                let _ = app.shared_prefs.save();
                             }
 
                             let en_btn =
@@ -593,11 +590,9 @@ pub fn render_settings_window(app: &mut PrismApp, ctx: &egui::Context) {
                                 app.i18n.set_language(Language::English);
                                 app.config.language = Some("en".to_string());
                                 let _ = app.config.save();
-                                let prefs = SharedPreferences {
-                                    language: "en".to_string(),
-                                    launcher_version: SUITE_VERSION.to_string(),
-                                };
-                                let _ = prefs.save();
+                                app.shared_prefs.language = "en".to_string();
+                                app.shared_prefs.launcher_version = SUITE_VERSION.to_string();
+                                let _ = app.shared_prefs.save();
                             }
                         });
                     });

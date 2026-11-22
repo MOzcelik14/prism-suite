@@ -56,6 +56,17 @@ pub fn draw_notes_icon(painter: &Painter, rect: Rect, color: Color32) {
     );
 }
 
+/// Draws a clean clock/history icon for the Recent Projects navigation item.
+pub fn draw_recent_icon(painter: &Painter, rect: Rect, color: Color32) {
+    let s = rect.width().min(rect.height());
+    let c = rect.center();
+    let radius = s * 0.36;
+    let stroke = Stroke::new(1.4_f32, color);
+    painter.circle_stroke(c, radius, stroke);
+    painter.line_segment([c, pos2(c.x, c.y - radius * 0.55)], stroke);
+    painter.line_segment([c, pos2(c.x + radius * 0.45, c.y + radius * 0.2)], stroke);
+}
+
 /// Draws a clean north-east external link arrow.
 pub fn draw_external_arrow(painter: &Painter, rect: Rect, color: Color32) {
     let s = rect.width().min(rect.height());

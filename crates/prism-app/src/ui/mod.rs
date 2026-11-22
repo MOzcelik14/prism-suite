@@ -3,6 +3,7 @@
 
 pub mod apps_view;
 pub mod modals;
+pub mod recent_projects_view;
 pub mod sidebar;
 pub mod vector_icons;
 pub mod whats_new_view;
@@ -85,6 +86,9 @@ pub fn render_app_ui(app: &mut PrismApp, ctx: &egui::Context) {
 
                             match app.active_tab {
                                 ActiveTab::Apps => apps_view::render_apps_view(app, ui),
+                                ActiveTab::RecentProjects => {
+                                    recent_projects_view::render_recent_projects_view(app, ui)
+                                }
                                 ActiveTab::WhatsNew => {
                                     whats_new_view::render_whats_new_view(app, ui)
                                 }

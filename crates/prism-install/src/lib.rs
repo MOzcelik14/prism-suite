@@ -17,7 +17,7 @@ use thiserror::Error;
 
 pub use archive::{extract_archive, ArchiveError};
 pub use desktop::{install_desktop_entry, remove_desktop_entry, DesktopError};
-pub use process::{is_binary_running, launch_detached};
+pub use process::{is_binary_running, launch_detached, launch_detached_with_args};
 pub use self_update::apply_self_update;
 
 #[derive(Debug, Error)]
@@ -366,6 +366,11 @@ impl InstallationManager {
 
     /// Launches an installed application as a detached process.
     pub fn launch_app(&self, app: &AppEntry) -> Result<u32, InstallError> {
+        self.launch_app_with_args(app, &[])
+    }
+
+    /// Launches an installed application with CLI arguments as a detached process.
+    pub fn launch_app_with_args(&self, app: &AppEntry, args: &[&str]) -> Result<u32, InstallError> {
         let bin_path = self.app_binary_path(app)?;
         if !bin_path.exists() {
             return Err(InstallError::ExecutableNotFound(bin_path));
@@ -373,7 +378,7 @@ impl InstallationManager {
 
         let working_dir = bin_path.parent().unwrap_or_else(|| Path::new("."));
 
-        launch_detached(&bin_path, working_dir).map_err(InstallError::Io)
+        launch_detached_with_args(&bin_path, working_dir, args).map_err(InstallError::Io)
     }
 
     /// Checks if the application is currently running.

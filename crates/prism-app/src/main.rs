@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 mod app;
+mod cli;
 mod icons;
 mod logo;
 mod theme;
@@ -10,10 +11,26 @@ mod ui;
 use app::PrismApp;
 use eframe::egui;
 use prism_core::branding::SUITE_DISPLAY_NAME;
+use std::process::ExitCode;
 use theme::configure_dark_theme;
 
-fn main() -> eframe::Result<()> {
+fn main() -> ExitCode {
     env_logger::init();
+
+    if std::env::args().nth(1).is_some() {
+        return cli::run_from_args();
+    }
+
+    match run_gui() {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(err) => {
+            eprintln!("GUI error: {err}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn run_gui() -> eframe::Result<()> {
 
     // Window icon is rasterized from the vector logo; falls back to the bundled bitmap.
     let icon_data = match logo::render_logo_rgba(256) {

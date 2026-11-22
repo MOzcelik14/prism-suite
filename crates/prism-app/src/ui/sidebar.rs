@@ -11,7 +11,8 @@ use crate::theme::{
     BORDER_SUBTLE, TEXT_MUTED, TEXT_PRIMARY, TEXT_SECONDARY,
 };
 use crate::ui::vector_icons::{
-    draw_apps_grid_icon, draw_info_icon, draw_notes_icon, draw_refresh_icon, draw_settings_icon,
+    draw_apps_grid_icon, draw_info_icon, draw_notes_icon, draw_recent_icon, draw_refresh_icon,
+    draw_settings_icon,
 };
 
 pub fn render_sidebar(app: &mut PrismApp, ctx: &egui::Context) {
@@ -79,6 +80,24 @@ pub fn render_sidebar(app: &mut PrismApp, ctx: &egui::Context) {
                     draw_apps_grid_icon,
                 ) {
                     app.active_tab = ActiveTab::Apps;
+                }
+
+                ui.add_space(4.0);
+
+                let recent_badge = if !app.shared_prefs.recent_projects.is_empty() {
+                    Some(app.shared_prefs.recent_projects.len().to_string())
+                } else {
+                    None
+                };
+                if nav_item(
+                    ui,
+                    nav_w,
+                    &app.i18n.text("nav-recent-projects"),
+                    recent_badge,
+                    app.active_tab == ActiveTab::RecentProjects,
+                    draw_recent_icon,
+                ) {
+                    app.active_tab = ActiveTab::RecentProjects;
                 }
 
                 ui.add_space(4.0);

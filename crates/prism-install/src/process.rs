@@ -6,6 +6,15 @@ use std::process::{Command, Stdio};
 
 /// Launches an application binary as a completely detached child process.
 pub fn launch_detached(bin_path: &Path, working_dir: &Path) -> std::io::Result<u32> {
+    launch_detached_with_args(bin_path, working_dir, &[])
+}
+
+/// Launches an application binary with CLI arguments as a completely detached child process.
+pub fn launch_detached_with_args(
+    bin_path: &Path,
+    working_dir: &Path,
+    args: &[&str],
+) -> std::io::Result<u32> {
     // Resolve symlinks so launcher scripts that locate resources relative to
     // themselves (e.g. `dirname "$BASH_SOURCE"`) see their real directory.
     let real_bin = std::fs::canonicalize(bin_path).unwrap_or_else(|_| bin_path.to_path_buf());
@@ -16,7 +25,8 @@ pub fn launch_detached(bin_path: &Path, working_dir: &Path) -> std::io::Result<u
     };
 
     let mut cmd = Command::new(&real_bin);
-    cmd.current_dir(&real_dir)
+    cmd.args(args)
+        .current_dir(&real_dir)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());

@@ -2459,6 +2459,7 @@ dependencies = [
 name = "prism-app"
 version = "1.2.1"
 dependencies = [
+ "chrono",
  "crossbeam-channel",
  "directories",
  "eframe",

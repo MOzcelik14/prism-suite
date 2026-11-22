@@ -23,6 +23,7 @@ use semver::Version;
 pub enum ActiveTab {
     #[default]
     Apps,
+    RecentProjects,
     WhatsNew,
 }
 
@@ -130,6 +131,7 @@ pub struct PrismApp {
     pub(crate) dismissed_launcher_update: bool,
     pub(crate) discovered_releases: Vec<(String, ReleaseInfo)>,
     pub(crate) custom_dir_input: String,
+    pub(crate) shared_prefs: SharedPreferences,
     logo_textures: HashMap<u32, egui::TextureHandle>,
     pub(crate) app_textures: HashMap<AppId, egui::TextureHandle>,
 }
@@ -154,11 +156,10 @@ impl PrismApp {
             ctx: cc.egui_ctx.clone(),
         };
 
-        // Write shared preferences for child applications
-        let shared_prefs = SharedPreferences {
-            language: i18n.language().as_code().to_string(),
-            launcher_version: SUITE_VERSION.to_string(),
-        };
+        // Preserve recent_projects while syncing language & launcher_version for child apps
+        let mut shared_prefs = SharedPreferences::load();
+        shared_prefs.language = i18n.language().as_code().to_string();
+        shared_prefs.launcher_version = SUITE_VERSION.to_string();
         let _ = shared_prefs.save();
 
         // Initial states: detect installed state and running status from filesystem
@@ -208,6 +209,7 @@ impl PrismApp {
             dismissed_launcher_update: false,
             discovered_releases: Vec::new(),
             custom_dir_input,
+            shared_prefs,
             logo_textures: HashMap::new(),
             app_textures: HashMap::new(),
         };
@@ -359,6 +361,39 @@ impl PrismApp {
                 }
             }
         }
+    }
+
+    /// Launches an installed application with a project file argument and updates recent history.
+    pub fn launch_application_with_file(&mut self, app_id: AppId, file_path: &std::path::Path) {
+        let Some(app) = self.catalog.get(app_id).cloned() else {
+            return;
+        };
+        let arg = file_path.to_string_lossy().into_owned();
+        match self.install_mgr.launch_app_with_args(&app, &[&arg]) {
+            Ok(pid) => {
+                self.running_pids.insert(app_id, pid);
+                self.states.insert(app_id, AppInstallState::Running);
+                self.shared_prefs
+                    .record_recent_project(app_id, file_path.to_path_buf());
+                let _ = self.shared_prefs.save();
+                self.set_temporary_status(self.i18n.text("msg-launched-success"));
+            }
+            Err(e) => {
+                self.set_temporary_status(format!("Launch failed: {}", e));
+            }
+        }
+    }
+
+    /// Removes a single project from the recent projects list and persists shared preferences.
+    pub fn remove_recent_project(&mut self, app_id: AppId, path: &std::path::Path) {
+        self.shared_prefs.remove_recent_project(app_id, path);
+        let _ = self.shared_prefs.save();
+    }
+
+    /// Clears all recent projects and persists shared preferences.
+    pub fn clear_recent_projects(&mut self) {
+        self.shared_prefs.clear_recent_projects();
+        let _ = self.shared_prefs.save();
     }
 
     /// Triggers the full verified download, verify, extract, and atomic install flow.
