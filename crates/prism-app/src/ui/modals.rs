@@ -4,8 +4,8 @@
 use std::path::PathBuf;
 
 use egui::{
-    vec2, Align, Align2, Button, Checkbox, Color32, DragValue, Layout, ProgressBar, RichText,
-    Rounding, Sense, Stroke, Ui, Window,
+    vec2, Align, Align2, Button, Checkbox, Color32, Layout, ProgressBar, RichText, Rounding, Sense,
+    Stroke, Ui, Window,
 };
 use egui_commonmark::CommonMarkViewer;
 use prism_core::branding::{
@@ -501,399 +501,440 @@ pub fn render_uninstall_dialog(app: &mut PrismApp, ctx: &egui::Context, app_id: 
     }
 }
 
+fn settings_section_header(ui: &mut Ui, title: &str) {
+    ui.label(
+        RichText::new(title.to_uppercase())
+            .size(11.0_f32)
+            .strong()
+            .color(TEXT_MUTED),
+    );
+    ui.add_space(6.0_f32);
+}
+
+fn settings_card(ui: &mut Ui, add_contents: impl FnOnce(&mut Ui)) {
+    egui::Frame::none()
+        .fill(BG_SURFACE)
+        .rounding(Rounding::same(10.0))
+        .stroke(Stroke::new(1.0_f32, BORDER_SUBTLE))
+        .inner_margin(egui::Margin::symmetric(16.0_f32, 14.0_f32))
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            add_contents(ui);
+        });
+}
+
+fn render_toggle_switch(ui: &mut Ui, checked: &mut bool) -> bool {
+    let desired_size = vec2(38.0_f32, 20.0_f32);
+    let (rect, response) = ui.allocate_exact_size(desired_size, Sense::click());
+    let changed = response.clicked();
+    if changed {
+        *checked = !*checked;
+    }
+
+    if ui.is_rect_visible(rect) {
+        let how_on = ui.ctx().animate_bool(response.id, *checked);
+        let fill = if *checked {
+            ACCENT_INDIGO
+        } else {
+            BG_SURFACE_ELEVATED
+        };
+        let stroke = if *checked {
+            Stroke::new(1.0_f32, ACCENT_INDIGO)
+        } else {
+            Stroke::new(1.0_f32, BORDER_STRONG)
+        };
+        let radius = rect.height() * 0.5_f32;
+        ui.painter().rect(rect, radius, fill, stroke);
+
+        let knob_radius = radius - 3.0_f32;
+        let knob_x = egui::lerp((rect.left() + radius)..=(rect.right() - radius), how_on);
+        ui.painter().circle_filled(
+            egui::pos2(knob_x, rect.center().y),
+            knob_radius,
+            Color32::WHITE,
+        );
+    }
+
+    changed
+}
+
+fn segmented_pill(
+    ui: &mut Ui,
+    label: &str,
+    active: bool,
+    active_fill: Color32,
+    width: f32,
+) -> bool {
+    let btn = Button::new(RichText::new(label).size(12.0_f32).color(if active {
+        Color32::WHITE
+    } else {
+        TEXT_SECONDARY
+    }))
+    .fill(if active {
+        active_fill
+    } else {
+        Color32::TRANSPARENT
+    })
+    .stroke(Stroke::NONE)
+    .rounding(Rounding::same(5.0))
+    .min_size(vec2(width, 26.0_f32));
+
+    ui.add(btn).clicked() && !active
+}
+
 pub fn render_settings_window(app: &mut PrismApp, ctx: &egui::Context) {
     let mut open = app.show_settings;
     let mut request_close = false;
 
+    // Dimmed backdrop behind the Settings modal
+    egui::Area::new(egui::Id::new("settings_backdrop"))
+        .order(egui::Order::Middle)
+        .fixed_pos(egui::pos2(0.0_f32, 0.0_f32))
+        .interactable(true)
+        .show(ctx, |ui| {
+            let screen = ctx.screen_rect();
+            ui.allocate_response(screen.size(), Sense::click());
+            ui.painter()
+                .rect_filled(screen, 0.0_f32, Color32::from_black_alpha(145));
+        });
+
     Window::new(app.i18n.text("settings-title"))
         .open(&mut open)
+        .order(egui::Order::Foreground)
         .collapsible(false)
         .resizable(false)
-        .anchor(Align2::CENTER_CENTER, vec2(0.0, 0.0))
-        .min_width(470.0_f32)
-        .max_width(470.0_f32)
+        .anchor(Align2::CENTER_CENTER, vec2(0.0_f32, 0.0_f32))
+        .fixed_size(vec2(520.0_f32, 0.0_f32))
+        .frame(
+            egui::Frame::window(&ctx.style())
+                .fill(Color32::from_rgb(20, 22, 29))
+                .stroke(Stroke::new(1.0_f32, BORDER_STRONG))
+                .rounding(Rounding::same(12.0))
+                .inner_margin(egui::Margin::symmetric(20.0_f32, 16.0_f32)),
+        )
         .show(ctx, |ui| {
-            ui.set_width(452.0_f32);
-            ui.add_space(4.0);
+            ui.set_width(480.0_f32);
+            ui.add_space(4.0_f32);
 
             // Section 1: General
-            egui::Frame::none()
-                .fill(BG_SURFACE)
-                .rounding(Rounding::same(8.0))
-                .stroke(Stroke::new(1.0_f32, BORDER_SUBTLE))
-                .inner_margin(egui::Margin::symmetric(14.0, 12.0))
-                .show(ui, |ui| {
+            settings_section_header(ui, &app.i18n.text("settings-section-general"));
+            settings_card(ui, |ui| {
+                ui.horizontal(|ui| {
                     ui.label(
-                        RichText::new(app.i18n.text("settings-section-general"))
-                            .size(11.0)
-                            .strong()
-                            .color(ACCENT_INDIGO),
-                    );
-                    ui.add_space(8.0);
-
-                    ui.horizontal(|ui| {
-                        ui.label(
-                            RichText::new(app.i18n.text("settings-language"))
-                                .size(13.0)
-                                .color(TEXT_PRIMARY),
-                        );
-
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            let is_tr = app.i18n.language() == Language::Turkish;
-
-                            let tr_btn =
-                                Button::new(RichText::new("Türkçe").size(12.0).color(if is_tr {
-                                    Color32::WHITE
-                                } else {
-                                    TEXT_MUTED
-                                }))
-                                .fill(if is_tr {
-                                    ACCENT_INDIGO
-                                } else {
-                                    BG_SURFACE_ELEVATED
-                                })
-                                .stroke(Stroke::new(
-                                    1.0_f32,
-                                    if is_tr { ACCENT_INDIGO } else { BORDER_SUBTLE },
-                                ))
-                                .rounding(Rounding::same(5.0))
-                                .min_size(vec2(80.0, 26.0));
-
-                            if ui.add(tr_btn).clicked() && !is_tr {
-                                app.i18n.set_language(Language::Turkish);
-                                app.config.language = Some("tr".to_string());
-                                let _ = app.config.save();
-                                app.shared_prefs.language = "tr".to_string();
-                                app.shared_prefs.launcher_version = SUITE_VERSION.to_string();
-                                let _ = app.shared_prefs.save();
-                            }
-
-                            let en_btn =
-                                Button::new(RichText::new("English").size(12.0).color(if !is_tr {
-                                    Color32::WHITE
-                                } else {
-                                    TEXT_MUTED
-                                }))
-                                .fill(if !is_tr {
-                                    ACCENT_INDIGO
-                                } else {
-                                    BG_SURFACE_ELEVATED
-                                })
-                                .stroke(Stroke::new(
-                                    1.0_f32,
-                                    if !is_tr { ACCENT_INDIGO } else { BORDER_SUBTLE },
-                                ))
-                                .rounding(Rounding::same(5.0))
-                                .min_size(vec2(80.0, 26.0));
-
-                            if ui.add(en_btn).clicked() && is_tr {
-                                app.i18n.set_language(Language::English);
-                                app.config.language = Some("en".to_string());
-                                let _ = app.config.save();
-                                app.shared_prefs.language = "en".to_string();
-                                app.shared_prefs.launcher_version = SUITE_VERSION.to_string();
-                                let _ = app.shared_prefs.save();
-                            }
-                        });
-                    });
-                });
-
-            ui.add_space(10.0);
-
-            // Section 2: Updates
-            egui::Frame::none()
-                .fill(BG_SURFACE)
-                .rounding(Rounding::same(8.0))
-                .stroke(Stroke::new(1.0_f32, BORDER_SUBTLE))
-                .inner_margin(egui::Margin::symmetric(14.0, 12.0))
-                .show(ui, |ui| {
-                    ui.label(
-                        RichText::new(app.i18n.text("settings-section-updates"))
-                            .size(11.0)
-                            .strong()
-                            .color(ACCENT_INDIGO),
-                    );
-                    ui.add_space(8.0);
-
-                    ui.horizontal(|ui| {
-                        ui.label(
-                            RichText::new(app.i18n.text("settings-channel"))
-                                .size(13.0)
-                                .color(TEXT_PRIMARY),
-                        );
-
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            let current_channel = app.config.release_channel;
-
-                            let beta_btn = Button::new(
-                                RichText::new(app.i18n.text("settings-channel-beta"))
-                                    .size(12.0)
-                                    .color(if current_channel == ReleaseChannel::Beta {
-                                        Color32::WHITE
-                                    } else {
-                                        TEXT_MUTED
-                                    }),
-                            )
-                            .fill(if current_channel == ReleaseChannel::Beta {
-                                ACCENT_AMBER
-                            } else {
-                                BG_SURFACE_ELEVATED
-                            })
-                            .stroke(Stroke::new(
-                                1.0_f32,
-                                if current_channel == ReleaseChannel::Beta {
-                                    ACCENT_AMBER
-                                } else {
-                                    BORDER_SUBTLE
-                                },
-                            ))
-                            .rounding(Rounding::same(5.0))
-                            .min_size(vec2(72.0, 26.0));
-
-                            if ui.add(beta_btn).clicked() && current_channel != ReleaseChannel::Beta
-                            {
-                                app.config.release_channel = ReleaseChannel::Beta;
-                                let _ = app.config.save();
-                                app.check_for_updates(true);
-                            }
-
-                            let stable_btn = Button::new(
-                                RichText::new(app.i18n.text("settings-channel-stable"))
-                                    .size(12.0)
-                                    .color(if current_channel == ReleaseChannel::Stable {
-                                        Color32::WHITE
-                                    } else {
-                                        TEXT_MUTED
-                                    }),
-                            )
-                            .fill(if current_channel == ReleaseChannel::Stable {
-                                ACCENT_INDIGO
-                            } else {
-                                BG_SURFACE_ELEVATED
-                            })
-                            .stroke(Stroke::new(
-                                1.0_f32,
-                                if current_channel == ReleaseChannel::Stable {
-                                    ACCENT_INDIGO
-                                } else {
-                                    BORDER_SUBTLE
-                                },
-                            ))
-                            .rounding(Rounding::same(5.0))
-                            .min_size(vec2(96.0, 26.0));
-
-                            if ui.add(stable_btn).clicked()
-                                && current_channel != ReleaseChannel::Stable
-                            {
-                                app.config.release_channel = ReleaseChannel::Stable;
-                                let _ = app.config.save();
-                                app.check_for_updates(true);
-                            }
-                        });
-                    });
-
-                    ui.add_space(10.0);
-                    ui.separator();
-                    ui.add_space(8.0);
-
-                    ui.label(
-                        RichText::new(app.i18n.text("settings-check-frequency"))
-                            .size(12.5)
-                            .color(TEXT_MUTED),
-                    );
-                    ui.add_space(6.0);
-
-                    let current_freq = app.config.check_frequency;
-                    let freqs = [
-                        (
-                            UpdateFrequency::EveryLaunch,
-                            app.i18n.text("settings-freq-launch"),
-                        ),
-                        (UpdateFrequency::Daily, app.i18n.text("settings-freq-daily")),
-                        (
-                            UpdateFrequency::Weekly,
-                            app.i18n.text("settings-freq-weekly"),
-                        ),
-                        (
-                            UpdateFrequency::Manual,
-                            app.i18n.text("settings-freq-manual"),
-                        ),
-                    ];
-
-                    ui.horizontal(|ui| {
-                        let pill_w = (ui.available_width() - 18.0) / 4.0;
-                        for (freq, label) in freqs {
-                            let active = current_freq == freq;
-                            let pill =
-                                Button::new(RichText::new(label).size(11.0).color(if active {
-                                    Color32::WHITE
-                                } else {
-                                    TEXT_MUTED
-                                }))
-                                .fill(if active {
-                                    ACCENT_INDIGO
-                                } else {
-                                    BG_SURFACE_ELEVATED
-                                })
-                                .stroke(Stroke::new(
-                                    1.0_f32,
-                                    if active { ACCENT_INDIGO } else { BORDER_SUBTLE },
-                                ))
-                                .rounding(Rounding::same(5.0))
-                                .min_size(vec2(pill_w, 26.0));
-
-                            if ui.add(pill).clicked() && !active {
-                                app.config.check_frequency = freq;
-                                let _ = app.config.save();
-                            }
-                        }
-                    });
-
-                    ui.add_space(10.0);
-                    ui.separator();
-                    ui.add_space(8.0);
-
-                    if ui
-                        .add(Checkbox::new(
-                            &mut app.config.auto_update,
-                            app.i18n.text("settings-auto-update"),
-                        ))
-                        .changed()
-                    {
-                        let _ = app.config.save();
-                    }
-
-                    ui.add_space(4.0);
-
-                    if ui
-                        .add(Checkbox::new(
-                            &mut app.config.check_updates_on_launch,
-                            app.i18n.text("settings-check-updates-launch"),
-                        ))
-                        .changed()
-                    {
-                        let _ = app.config.save();
-                    }
-                });
-
-            ui.add_space(10.0);
-
-            // Section 3: Storage
-            egui::Frame::none()
-                .fill(BG_SURFACE)
-                .rounding(Rounding::same(8.0))
-                .stroke(Stroke::new(1.0_f32, BORDER_SUBTLE))
-                .inner_margin(egui::Margin::symmetric(14.0, 12.0))
-                .show(ui, |ui| {
-                    ui.label(
-                        RichText::new(app.i18n.text("settings-section-storage"))
-                            .size(11.0)
-                            .strong()
-                            .color(ACCENT_INDIGO),
-                    );
-                    ui.add_space(8.0);
-
-                    ui.horizontal(|ui| {
-                        ui.label(
-                            RichText::new(app.i18n.text("settings-keep-versions"))
-                                .size(13.0)
-                                .color(TEXT_PRIMARY),
-                        );
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            if ui
-                                .add(
-                                    DragValue::new(&mut app.config.keep_versions_count)
-                                        .range(1..=10)
-                                        .speed(0.1),
-                                )
-                                .changed()
-                            {
-                                let _ = app.config.save();
-                            }
-                        });
-                    });
-
-                    ui.add_space(10.0);
-                    ui.separator();
-                    ui.add_space(8.0);
-
-                    ui.label(
-                        RichText::new(app.i18n.text("settings-install-directory"))
-                            .size(13.0)
+                        RichText::new(app.i18n.text("settings-language"))
+                            .size(13.0_f32)
                             .color(TEXT_PRIMARY),
                     );
-                    ui.add_space(4.0);
 
-                    let current_dir_str = app
-                        .install_mgr
-                        .apps_root_dir()
-                        .map(|p| p.to_string_lossy().to_string())
-                        .unwrap_or_else(|_| "~/.local/share/prism-suite/apps".to_string());
-                    egui::Frame::none()
-                        .fill(BG_SURFACE_ELEVATED)
-                        .rounding(Rounding::same(5.0))
-                        .stroke(Stroke::new(1.0_f32, BORDER_SUBTLE))
-                        .inner_margin(egui::Margin::symmetric(8.0, 5.0))
-                        .show(ui, |ui| {
-                            ui.label(
-                                RichText::new(app.i18n.text_with_arg(
-                                    "settings-current-dir",
-                                    "dir",
-                                    &current_dir_str,
-                                ))
-                                .size(11.0)
-                                .monospace()
-                                .color(ACCENT_CYAN),
-                            );
-                        });
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        let is_tr = app.i18n.language() == Language::Turkish;
 
-                    ui.add_space(6.0);
+                        egui::Frame::none()
+                            .fill(BG_SURFACE_ELEVATED)
+                            .stroke(Stroke::new(1.0_f32, BORDER_SUBTLE))
+                            .rounding(Rounding::same(7.0))
+                            .inner_margin(egui::Margin::same(3.0_f32))
+                            .show(ui, |ui| {
+                                ui.spacing_mut().item_spacing.x = 3.0_f32;
+                                if segmented_pill(ui, "Türkçe", is_tr, ACCENT_INDIGO, 82.0_f32) {
+                                    app.i18n.set_language(Language::Turkish);
+                                    app.config.language = Some("tr".to_string());
+                                    let _ = app.config.save();
+                                    app.shared_prefs.language = "tr".to_string();
+                                    app.shared_prefs.launcher_version = SUITE_VERSION.to_string();
+                                    let _ = app.shared_prefs.save();
+                                }
+                                if segmented_pill(ui, "English", !is_tr, ACCENT_INDIGO, 82.0_f32) {
+                                    app.i18n.set_language(Language::English);
+                                    app.config.language = Some("en".to_string());
+                                    let _ = app.config.save();
+                                    app.shared_prefs.language = "en".to_string();
+                                    app.shared_prefs.launcher_version = SUITE_VERSION.to_string();
+                                    let _ = app.shared_prefs.save();
+                                }
+                            });
+                    });
+                });
+            });
 
-                    ui.horizontal(|ui| {
-                        let input_w = (ui.available_width() - 80.0).max(160.0);
-                        ui.add_sized(
-                            vec2(input_w, 28.0),
-                            egui::TextEdit::singleline(&mut app.custom_dir_input)
-                                .hint_text("~/.local/share/prism-suite/apps"),
-                        );
+            ui.add_space(14.0_f32);
 
-                        let save_dir_btn = Button::new(
-                            RichText::new(app.i18n.text("action-save"))
-                                .size(12.0)
-                                .strong()
-                                .color(Color32::WHITE),
-                        )
-                        .fill(ACCENT_INDIGO)
-                        .rounding(Rounding::same(5.0))
-                        .min_size(vec2(72.0, 28.0));
+            // Section 2: Updates
+            settings_section_header(ui, &app.i18n.text("settings-section-updates"));
+            settings_card(ui, |ui| {
+                // Release channel row
+                ui.horizontal(|ui| {
+                    ui.label(
+                        RichText::new(app.i18n.text("settings-channel"))
+                            .size(13.0_f32)
+                            .color(TEXT_PRIMARY),
+                    );
 
-                        if ui.add(save_dir_btn).clicked() {
-                            let trimmed = app.custom_dir_input.trim();
-                            if trimmed.is_empty() {
-                                app.config.custom_install_dir = None;
-                            } else {
-                                app.config.custom_install_dir = Some(PathBuf::from(trimmed));
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        let current_channel = app.config.release_channel;
+
+                        egui::Frame::none()
+                            .fill(BG_SURFACE_ELEVATED)
+                            .stroke(Stroke::new(1.0_f32, BORDER_SUBTLE))
+                            .rounding(Rounding::same(7.0))
+                            .inner_margin(egui::Margin::same(3.0_f32))
+                            .show(ui, |ui| {
+                                ui.spacing_mut().item_spacing.x = 3.0_f32;
+                                if segmented_pill(
+                                    ui,
+                                    &app.i18n.text("settings-channel-beta"),
+                                    current_channel == ReleaseChannel::Beta,
+                                    ACCENT_AMBER,
+                                    72.0_f32,
+                                ) {
+                                    app.config.release_channel = ReleaseChannel::Beta;
+                                    let _ = app.config.save();
+                                    app.check_for_updates(true);
+                                }
+                                if segmented_pill(
+                                    ui,
+                                    &app.i18n.text("settings-channel-stable"),
+                                    current_channel == ReleaseChannel::Stable,
+                                    ACCENT_INDIGO,
+                                    108.0_f32,
+                                ) {
+                                    app.config.release_channel = ReleaseChannel::Stable;
+                                    let _ = app.config.save();
+                                    app.check_for_updates(true);
+                                }
+                            });
+                    });
+                });
+
+                ui.add_space(12.0_f32);
+                ui.separator();
+                ui.add_space(10.0_f32);
+
+                // Check frequency
+                ui.label(
+                    RichText::new(app.i18n.text("settings-check-frequency"))
+                        .size(12.5_f32)
+                        .color(TEXT_SECONDARY),
+                );
+                ui.add_space(8.0_f32);
+
+                let current_freq = app.config.check_frequency;
+                let freqs = [
+                    (
+                        UpdateFrequency::EveryLaunch,
+                        app.i18n.text("settings-freq-launch"),
+                    ),
+                    (UpdateFrequency::Daily, app.i18n.text("settings-freq-daily")),
+                    (
+                        UpdateFrequency::Weekly,
+                        app.i18n.text("settings-freq-weekly"),
+                    ),
+                    (
+                        UpdateFrequency::Manual,
+                        app.i18n.text("settings-freq-manual"),
+                    ),
+                ];
+
+                egui::Frame::none()
+                    .fill(BG_SURFACE_ELEVATED)
+                    .stroke(Stroke::new(1.0_f32, BORDER_SUBTLE))
+                    .rounding(Rounding::same(7.0))
+                    .inner_margin(egui::Margin::same(3.0_f32))
+                    .show(ui, |ui| {
+                        ui.set_width(ui.available_width());
+                        ui.horizontal(|ui| {
+                            ui.spacing_mut().item_spacing.x = 3.0_f32;
+                            let pill_w = (ui.available_width() - 9.0_f32) / 4.0_f32;
+                            for (freq, label) in freqs {
+                                if segmented_pill(
+                                    ui,
+                                    &label,
+                                    current_freq == freq,
+                                    ACCENT_INDIGO,
+                                    pill_w,
+                                ) {
+                                    app.config.check_frequency = freq;
+                                    let _ = app.config.save();
+                                }
                             }
+                        });
+                    });
+
+                ui.add_space(12.0_f32);
+                ui.separator();
+                ui.add_space(10.0_f32);
+
+                // Auto-update toggle row
+                ui.horizontal(|ui| {
+                    ui.label(
+                        RichText::new(app.i18n.text("settings-auto-update"))
+                            .size(13.0_f32)
+                            .color(TEXT_PRIMARY),
+                    );
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        if render_toggle_switch(ui, &mut app.config.auto_update) {
                             let _ = app.config.save();
-                            app.install_mgr =
-                                InstallationManager::new(app.config.custom_install_dir.clone());
-                            app.set_temporary_status(app.i18n.text("msg-installed-success"));
                         }
                     });
                 });
 
-            ui.add_space(14.0);
+                ui.add_space(10.0_f32);
+
+                // Check on launch toggle row
+                ui.horizontal(|ui| {
+                    ui.label(
+                        RichText::new(app.i18n.text("settings-check-updates-launch"))
+                            .size(13.0_f32)
+                            .color(TEXT_PRIMARY),
+                    );
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        if render_toggle_switch(ui, &mut app.config.check_updates_on_launch) {
+                            let _ = app.config.save();
+                        }
+                    });
+                });
+            });
+
+            ui.add_space(14.0_f32);
+
+            // Section 3: Storage
+            settings_section_header(ui, &app.i18n.text("settings-section-storage"));
+            settings_card(ui, |ui| {
+                // Keep previous versions stepper
+                ui.horizontal(|ui| {
+                    ui.label(
+                        RichText::new(app.i18n.text("settings-keep-versions"))
+                            .size(13.0_f32)
+                            .color(TEXT_PRIMARY),
+                    );
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        egui::Frame::none()
+                            .fill(BG_SURFACE_ELEVATED)
+                            .stroke(Stroke::new(1.0_f32, BORDER_SUBTLE))
+                            .rounding(Rounding::same(7.0))
+                            .inner_margin(egui::Margin::symmetric(4.0_f32, 2.0_f32))
+                            .show(ui, |ui| {
+                                ui.spacing_mut().item_spacing.x = 6.0_f32;
+                                let can_inc = app.config.keep_versions_count < 10;
+                                if ui
+                                    .add_enabled(
+                                        can_inc,
+                                        Button::new(RichText::new("+").size(13.0_f32).strong())
+                                            .fill(Color32::TRANSPARENT)
+                                            .stroke(Stroke::NONE)
+                                            .min_size(vec2(24.0_f32, 22.0_f32)),
+                                    )
+                                    .clicked()
+                                {
+                                    app.config.keep_versions_count += 1;
+                                    let _ = app.config.save();
+                                }
+
+                                ui.label(
+                                    RichText::new(app.config.keep_versions_count.to_string())
+                                        .size(13.0_f32)
+                                        .strong()
+                                        .color(TEXT_PRIMARY),
+                                );
+
+                                let can_dec = app.config.keep_versions_count > 1;
+                                if ui
+                                    .add_enabled(
+                                        can_dec,
+                                        Button::new(RichText::new("−").size(13.0_f32).strong())
+                                            .fill(Color32::TRANSPARENT)
+                                            .stroke(Stroke::NONE)
+                                            .min_size(vec2(24.0_f32, 22.0_f32)),
+                                    )
+                                    .clicked()
+                                {
+                                    app.config.keep_versions_count -= 1;
+                                    let _ = app.config.save();
+                                }
+                            });
+                    });
+                });
+
+                ui.add_space(12.0_f32);
+                ui.separator();
+                ui.add_space(10.0_f32);
+
+                ui.label(
+                    RichText::new(app.i18n.text("settings-install-directory"))
+                        .size(13.0_f32)
+                        .color(TEXT_PRIMARY),
+                );
+                ui.add_space(4.0_f32);
+
+                let current_dir_str = app
+                    .install_mgr
+                    .apps_root_dir()
+                    .map(|p| p.to_string_lossy().to_string())
+                    .unwrap_or_else(|_| "~/.local/share/prism-suite/apps".to_string());
+
+                ui.label(
+                    RichText::new(app.i18n.text_with_arg(
+                        "settings-current-dir",
+                        "dir",
+                        &current_dir_str,
+                    ))
+                    .size(11.0_f32)
+                    .monospace()
+                    .color(ACCENT_CYAN),
+                );
+
+                ui.add_space(8.0_f32);
+
+                ui.horizontal(|ui| {
+                    let input_w = (ui.available_width() - 92.0_f32).max(180.0_f32);
+                    ui.add_sized(
+                        vec2(input_w, 30.0_f32),
+                        egui::TextEdit::singleline(&mut app.custom_dir_input)
+                            .hint_text("~/.local/share/prism-suite/apps")
+                            .margin(egui::Margin::symmetric(10.0_f32, 6.0_f32)),
+                    );
+
+                    ui.add_space(6.0_f32);
+
+                    let save_dir_btn = Button::new(
+                        RichText::new(app.i18n.text("action-save"))
+                            .size(12.5_f32)
+                            .strong()
+                            .color(Color32::WHITE),
+                    )
+                    .fill(ACCENT_INDIGO)
+                    .rounding(Rounding::same(6.0))
+                    .min_size(vec2(78.0_f32, 30.0_f32));
+
+                    if ui.add(save_dir_btn).clicked() {
+                        let trimmed = app.custom_dir_input.trim();
+                        if trimmed.is_empty() {
+                            app.config.custom_install_dir = None;
+                        } else {
+                            app.config.custom_install_dir = Some(PathBuf::from(trimmed));
+                        }
+                        let _ = app.config.save();
+                        app.install_mgr =
+                            InstallationManager::new(app.config.custom_install_dir.clone());
+                        app.set_temporary_status(app.i18n.text("msg-installed-success"));
+                    }
+                });
+            });
+
+            ui.add_space(16.0_f32);
+            ui.separator();
+            ui.add_space(12.0_f32);
 
             ui.horizontal(|ui| {
                 let reset_btn = Button::new(
                     RichText::new(app.i18n.text("settings-reset-defaults"))
-                        .size(12.0)
-                        .color(TEXT_MUTED),
+                        .size(12.0_f32)
+                        .color(TEXT_SECONDARY),
                 )
                 .fill(BG_SURFACE_ELEVATED)
                 .stroke(Stroke::new(1.0_f32, BORDER_SUBTLE))
-                .rounding(Rounding::same(5.0))
-                .min_size(vec2(0.0, 30.0));
+                .rounding(Rounding::same(6.0))
+                .min_size(vec2(0.0_f32, 32.0_f32));
 
                 if ui.add(reset_btn).clicked() {
                     app.config.reset_to_defaults();
@@ -906,13 +947,13 @@ pub fn render_settings_window(app: &mut PrismApp, ctx: &egui::Context) {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     let close_btn = Button::new(
                         RichText::new(app.i18n.text("action-close"))
-                            .size(12.5)
+                            .size(12.5_f32)
                             .strong()
                             .color(Color32::WHITE),
                     )
                     .fill(ACCENT_INDIGO)
-                    .rounding(Rounding::same(5.0))
-                    .min_size(vec2(84.0, 30.0));
+                    .rounding(Rounding::same(6.0))
+                    .min_size(vec2(92.0_f32, 32.0_f32));
 
                     if ui.add(close_btn).clicked() {
                         request_close = true;
