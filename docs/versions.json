@@ -1,19 +1,19 @@
 {
   "prism_suite": {
-    "version": "v1.2.2",
-    "deb_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.2/prism_1.2.2_amd64.deb",
-    "deb_name": "prism_1.2.2_amd64.deb",
-    "rpm_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.2/prism-1.2.2-1.x86_64.rpm",
-    "rpm_name": "prism-1.2.2-1.x86_64.rpm",
-    "appimage_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.2/prism-1.2.2-x86_64.AppImage",
-    "appimage_name": "prism-1.2.2-x86_64.AppImage",
-    "dmg_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.2/prism-1.2.2-macos-arm64.dmg",
-    "dmg_name": "prism-1.2.2-macos-arm64.dmg",
-    "win_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.2/prism-1.2.2-windows-x86_64.zip",
-    "win_name": "prism-1.2.2-windows-x86_64.zip"
+    "version": "v1.2.3",
+    "deb_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.3/prism_1.2.3_amd64.deb",
+    "deb_name": "prism_1.2.3_amd64.deb",
+    "rpm_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.3/prism-1.2.3-1.x86_64.rpm",
+    "rpm_name": "prism-1.2.3-1.x86_64.rpm",
+    "appimage_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.3/prism-1.2.3-x86_64.AppImage",
+    "appimage_name": "prism-1.2.3-x86_64.AppImage",
+    "dmg_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.3/prism-1.2.3-macos-arm64.dmg",
+    "dmg_name": "prism-1.2.3-macos-arm64.dmg",
+    "win_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.3/prism-1.2.3-windows-x86_64.zip",
+    "win_name": "prism-1.2.3-windows-x86_64.zip"
   },
-  "trim": "v2.5.2",
-  "stem": "v0.6.3",
+  "trim": "v2.5.4",
+  "stem": "v0.6.4",
   "beam": "v1.2.8",
   "dram": "v1.0.1"
 }
