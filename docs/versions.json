@@ -13,7 +13,7 @@
     "win_name": "prism-1.2.3-windows-x86_64.zip"
   },
   "trim": "v2.5.5",
-  "stem": "v0.6.5",
-  "beam": "v1.2.8",
-  "dram": "v1.0.1"
+  "stem": "v0.6.6",
+  "beam": "v1.2.9",
+  "dram": "v1.0.2"
 }
