@@ -2457,7 +2457,7 @@ dependencies = [
 
 [[package]]
 name = "prism-app"
-version = "1.2.3"
+version = "2026.11.0"
 dependencies = [
  "chrono",
  "crossbeam-channel",
@@ -2478,7 +2478,7 @@ dependencies = [
 
 [[package]]
 name = "prism-core"
-version = "1.2.3"
+version = "2026.11.0"
 dependencies = [
  "directories",
  "log",
@@ -2490,7 +2490,7 @@ dependencies = [
 
 [[package]]
 name = "prism-i18n"
-version = "1.2.3"
+version = "2026.11.0"
 dependencies = [
  "fluent-bundle",
  "log",
@@ -2501,7 +2501,7 @@ dependencies = [
 
 [[package]]
 name = "prism-install"
-version = "1.2.3"
+version = "2026.11.0"
 dependencies = [
  "base64 0.22.1",
  "directories",
@@ -2518,7 +2518,7 @@ dependencies = [
 
 [[package]]
 name = "prism-net"
-version = "1.2.3"
+version = "2026.11.0"
 dependencies = [
  "base64 0.22.1",
  "chrono",
