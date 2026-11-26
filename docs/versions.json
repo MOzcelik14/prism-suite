@@ -1,19 +1,19 @@
 {
   "prism_suite": {
-    "version": "v1.2.3",
-    "deb_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.3/prism_1.2.3_amd64.deb",
-    "deb_name": "prism_1.2.3_amd64.deb",
-    "rpm_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.3/prism-1.2.3-1.x86_64.rpm",
-    "rpm_name": "prism-1.2.3-1.x86_64.rpm",
-    "appimage_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.3/prism-1.2.3-x86_64.AppImage",
-    "appimage_name": "prism-1.2.3-x86_64.AppImage",
-    "dmg_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.3/prism-1.2.3-macos-arm64.dmg",
-    "dmg_name": "prism-1.2.3-macos-arm64.dmg",
-    "win_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v1.2.3/prism-1.2.3-windows-x86_64.zip",
-    "win_name": "prism-1.2.3-windows-x86_64.zip"
+    "version": "v2026.11.0",
+    "deb_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v2026.11.0/prism_2026.11.0_amd64.deb",
+    "deb_name": "prism_2026.11.0_amd64.deb",
+    "rpm_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v2026.11.0/prism-2026.11.0-1.x86_64.rpm",
+    "rpm_name": "prism-2026.11.0-1.x86_64.rpm",
+    "appimage_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v2026.11.0/prism-2026.11.0-x86_64.AppImage",
+    "appimage_name": "prism-2026.11.0-x86_64.AppImage",
+    "dmg_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v2026.11.0/prism-2026.11.0-macos-arm64.dmg",
+    "dmg_name": "prism-2026.11.0-macos-arm64.dmg",
+    "win_url": "https://github.com/MOzcelik14/prism-suite/releases/download/v2026.11.0/prism-2026.11.0-windows-x86_64.zip",
+    "win_name": "prism-2026.11.0-windows-x86_64.zip"
   },
-  "trim": "v2.5.5",
-  "stem": "v0.6.6",
-  "beam": "v1.2.9",
-  "dram": "v1.0.2"
+  "trim": "v2026.11.0",
+  "stem": "v2026.11.0",
+  "beam": "v2026.11.0",
+  "dram": "v2026.11.0"
 }
